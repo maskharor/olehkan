@@ -76,6 +76,9 @@ fun OlehKanNavHost(
                 onReviewsClick = { id ->
                     navController.navigate(Screen.Reviews.createRoute(id))
                 },
+                onStoreClick = {
+                    navController.navigate(Screen.Admin.route)
+                },
             )
         }
 
