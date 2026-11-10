@@ -11,8 +11,11 @@ data class Product(
     val category: String,
     val image: String,
     val description: String,
+    val sellerName: String = "Toko Oleh-Oleh Nusantara",
+    val sellerCity: String = place,
+    val sellerRating: Double = 4.9,
+    val sellerBadge: String = "Official Store",
 )
-
 
 fun Product.formattedPrice(): String = "Rp${price.toLong().toString().formatRupiah()}"
 
