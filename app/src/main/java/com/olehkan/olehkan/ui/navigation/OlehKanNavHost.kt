@@ -16,25 +16,20 @@ import com.olehkan.olehkan.ui.screens.profile.ProfileScreen
 import com.olehkan.olehkan.ui.screens.reviews.ReviewsScreen
 
 @Composable
-fun OlehKanNavHost(
-    navController: NavHostController,
-) {
+fun OlehKanNavHost(navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = Screen.Home.route,
     ) {
-
+        // ==== Bottom Tabs ====
         composable(Screen.Home.route) {
             HomeScreen(
                 onProductClick = { productId ->
                     navController.navigate(Screen.Detail.createRoute(productId))
                 },
-                onAdminClick = {
-                    navController.navigate(Screen.Admin.route)
-                },
+                onAdminClick = { navController.navigate(Screen.Admin.route) },
             )
         }
-
         composable(Screen.Favorites.route) {
             FavoritesScreen(
                 onProductClick = { productId ->
@@ -42,26 +37,21 @@ fun OlehKanNavHost(
                 },
             )
         }
-
         composable(Screen.Orders.route) {
             OrdersScreen(
-                onPayClick = { productId ->
-                    navController.navigate(Screen.Checkout.createRoute(productId))
+                onPayClick = { productId, orderId ->
+                    navController.navigate(Screen.Checkout.createRoute(productId, orderId))
                 },
             )
         }
-
         composable(Screen.Profile.route) {
             ProfileScreen(
-                onAdminClick = {
-                    navController.navigate(Screen.Admin.route)
-                },
-                onReviewsClick = {
-                    navController.navigate(Screen.Reviews.createRoute(null))
-                },
+                onAdminClick = { navController.navigate(Screen.Admin.route) },
+                onReviewsClick = { navController.navigate(Screen.Reviews.createRoute(null)) },
             )
         }
 
+        // ==== Stack Screens ====
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("productId") { type = NavType.IntType }),
@@ -81,11 +71,20 @@ fun OlehKanNavHost(
 
         composable(
             route = Screen.Checkout.route,
-            arguments = listOf(navArgument("productId") { type = NavType.IntType }),
+            arguments = listOf(
+                navArgument("productId") { type = NavType.IntType },
+                navArgument("orderId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
         ) { backStackEntry ->
             val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+            val orderId = backStackEntry.arguments?.getString("orderId")
             CheckoutScreen(
                 productId = productId,
+                orderId = orderId,
                 onBack = { navController.popBackStack() },
                 onDone = {
                     navController.navigate(Screen.Orders.route) {
@@ -113,9 +112,7 @@ fun OlehKanNavHost(
         }
 
         composable(Screen.Admin.route) {
-            AdminScreen(
-                onBack = { navController.popBackStack() },
-            )
+            AdminScreen(onBack = { navController.popBackStack() })
         }
     }
 }
