@@ -1,31 +1,27 @@
 package com.olehkan.olehkan.ui.screens.orders
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.olehkan.olehkan.ui.theme.OlehKanType
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun OrdersScreen(
-    onPayClick: (Int) -> Unit,
+    onPayClick: (productId: Int, orderId: String) -> Unit,   // <-- WAJIB 2 param
+    viewModel: OrdersViewModel = viewModel(),
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("PESANAN", style = OlehKanType.H1)
-        Button(onClick = { onPayClick(1) }) {
-            Text("Bayar Pesanan (id=1)")
-        }
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    OrdersContent(
+        uiState = uiState,
+        onTabSelected = viewModel::onTabSelected,
+        onPayClick = { orderId ->
+            // Cari ordernya, lalu teruskan productId & orderId ke Checkout
+            val order = uiState.allOrders.find { it.id == orderId }
+            order?.let {
+                onPayClick(it.product.id, it.id)
+            }
+        },
+        onRetry = viewModel::onRetry,
+    )
 }

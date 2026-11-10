@@ -10,8 +10,12 @@ sealed class Screen(val route: String) {
         fun createRoute(productId: Int): String = "detail/$productId"
     }
 
-    data object Checkout : Screen("checkout/{productId}") {
-        fun createRoute(productId: Int): String = "checkout/$productId"
+    data object Checkout : Screen("checkout/{productId}?orderId={orderId}") {
+        const val ARG_PRODUCT_ID = "productId"
+        const val ARG_ORDER_ID = "orderId"
+        fun createRoute(productId: Int, orderId: String? = null): String =
+            if (orderId != null) "checkout/$productId?orderId=$orderId"
+            else "checkout/$productId"
     }
 
     data object Reviews : Screen("reviews?productId={productId}") {

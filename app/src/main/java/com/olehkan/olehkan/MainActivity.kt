@@ -18,11 +18,26 @@ import com.olehkan.olehkan.ui.navigation.OlehKanNavHost
 import com.olehkan.olehkan.ui.navigation.bottomNavRoutes
 import com.olehkan.olehkan.ui.theme.OlehKanTheme
 import com.olehkan.olehkan.ui.theme.Paper
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        lifecycleScope.launch {
+            val vm = com.olehkan.olehkan.ui.screens.orders.OrdersViewModel()
+            delay(600)  // tunggu delay 400ms + margin
+            val state = vm.uiState.value
+            android.util.Log.d("OrdersVM", "Active: ${state.activeCount}, Completed: ${state.completedCount}")
+            state.activeOrders.forEach {
+                android.util.Log.d("OrdersVM", "[ACTIVE] ${it.id} - ${it.status.displayLabel}")
+            }
+            state.completedOrders.forEach {
+                android.util.Log.d("OrdersVM", "[DONE] ${it.id} - ${it.status.displayLabel}")
+            }
+        }
         setContent {
             OlehKanTheme {
                 val navController = rememberNavController()

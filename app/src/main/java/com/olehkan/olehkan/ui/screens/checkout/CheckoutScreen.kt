@@ -1,37 +1,45 @@
 package com.olehkan.olehkan.ui.screens.checkout
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.olehkan.olehkan.ui.theme.OlehKanType
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
+/**
+ * Screen checkout — SMART.
+ *
+ * Menggantikan placeholder Phase 4 dengan MVVM lengkap.
+ * ViewModel dibuat via factory (karena butuh productId).
+ *
+ * Setelah `isOrderPlaced == true`, otomatis panggil `onDone()`
+ * untuk navigate ke Orders.
+ */
 @Composable
 fun CheckoutScreen(
     productId: Int,
     onBack: () -> Unit,
     onDone: () -> Unit,
+    viewModel: CheckoutViewModel = viewModel(
+        factory = CheckoutViewModelFactory(productId = productId),
+        key = "checkout_$productId",  // key unik per productId
+    ),
+    orderId: String?,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("CHECKOUT", style = OlehKanType.H1)
-        Text("productId = $productId", style = OlehKanType.Body)
-        Button(onClick = onDone) {
-            Text("Bayar & Selesai")
-        }
-        Button(onClick = onBack) {
-            Text("← Kembali")
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Auto navigate setelah order berhasil dibuat
+    LaunchedEffect(uiState.isOrderPlaced) {
+        if (uiState.isOrderPlaced) {
+            onDone()
         }
     }
+
+    CheckoutContent(
+        uiState = uiState,
+        onBack = onBack,
+        onPaymentMethodSelected = viewModel::onPaymentMethodSelected,
+        onPayClick = viewModel::onPayClick,
+        onRetry = viewModel::onRetry,
+    )
 }
