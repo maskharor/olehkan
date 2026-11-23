@@ -20,6 +20,18 @@ sealed class Screen(val route: String) {
             if (productId != null) "reviews?productId=$productId" else "reviews"
     }
 
+    data object Categories : Screen("categories")
+    data object CategoryDetail : Screen("categories/{categoryId}") {
+        fun createRoute(categoryId: String): String = "categories/$categoryId"
+    }
+    data object CategoryForm : Screen("category-form?categoryId={categoryId}") {
+        fun createRoute(categoryId: String? = null): String =
+            if (categoryId == null) "category-form" else "category-form?categoryId=$categoryId"
+    }
+
+    data object Store : Screen("store")
+    data object AdminDashboard : Screen("admin-dashboard")
+    data object EditProfile : Screen("edit-profile")
     data object Admin : Screen("admin")
 }
 

@@ -11,7 +11,7 @@ data class Product(
     val category: String,
     val image: String,
     val description: String,
-    val sellerName: String = "Toko Oleh-Oleh Nusantara",
+    val sellerName: String = "OlehKan",
     val sellerCity: String = place,
     val sellerRating: Double = 4.9,
     val sellerBadge: String = "Official Store",

@@ -148,7 +148,7 @@ fun AdminScreen(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Text(
-                                            text = "Sentra Bakpia Pathok 25",
+                                            text = "OlehKan",
                                             style = OlehKanType.SubHeaderTitle.copy(fontSize = 16.sp),
                                             color = Ink
                                         )

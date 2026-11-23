@@ -1,0 +1,49 @@
+PENYIAPAN SUPABASE OLEHKAN
+
+Status: file SQL dan kode Android disiapkan; tidak ada perintah database
+yang dijalankan otomatis oleh aplikasi.
+
+1. Gunakan project Supabase pengembangan. Periksa tabel yang sudah ada.
+   Migrasi ini membuat profiles dan categories baru; jangan menjalankannya
+   di skema yang sudah mempunyai tabel bernama sama tanpa rekonsiliasi.
+2. Tinjau lalu jalankan migrations/202611230001_auth_profiles_categories.sql
+   melalui SQL Editor dengan akses administrasi yang tepercaya.
+3. Aktifkan Email/Password di Supabase Auth. Tetapkan panjang minimum
+   password minimal 8 karakter. Aktifkan Confirm Email sesuai kebutuhan.
+   Site URL harus mengarah ke halaman konfirmasi yang valid. Aplikasi ini
+   tidak mengambil token dari tautan email: setelah verifikasi di browser,
+   pengguna kembali dan login menggunakan email/password.
+4. Isi dua resource publik pada app/src/main/res/values/supabase.xml:
+   supabase_url dan supabase_publishable_key. Keduanya memang konfigurasi
+   publik aplikasi. Jangan gunakan service-role, secret key, atau password.
+5. Daftarkan akun admin seperti akun biasa, verifikasi email, lalu promosikan
+   UUID akun tersebut melalui SQL Editor seperti contoh di bagian akhir
+   migrasi. Tidak ada pilihan ADMIN di registrasi atau edit profil.
+6. Build/run ulang aplikasi. Uji register buyer, email confirmation, login,
+   logout, pemulihan sesi, edit profil, dan login admin.
+7. Dashboard admin menyediakan Kelola Kategori dan Impor Kategori Lokal.
+   Impor hanya terjadi setelah tombol ditekan admin. Data SharedPreferences
+   lama tidak dihapus. Nama yang sudah ada dilewati. Jika koneksi terputus,
+   impor dapat terhenti sebagian dan aman dicoba kembali.
+
+KEAMANAN
+- RLS dan izin kolom melindungi profil dan kategori, termasuk request langsung.
+- Buyer hanya dapat mengubah full_name miliknya. role tidak dapat diubah
+  lewat REST, termasuk oleh admin. Promosi role hanya melalui backend.
+- Kategori katalog awal dilindungi server melalui catalog_locked.
+- Jika nanti katalog produk dimigrasikan, tambahkan foreign key kategori
+  ON DELETE RESTRICT dan aturan server untuk rename kategori terpakai.
+- Token sesi terenkripsi Android Keystore dan dikecualikan dari backup.
+- Password tidak disimpan dalam profil, log, SharedPreferences, atau state tersimpan.
+- Logout saat offline menghapus sesi lokal, tetapi pencabutan token di server
+  belum dapat dipastikan; aplikasi memberikan pesan mengenai kondisi ini.
+
+BATASAN INTEGRASI
+- Produk masih dummy; pesanan, checkout, dan ulasan masih placeholder.
+- Dashboard tidak menampilkan jumlah produk/pesanan dummy sebagai data nyata.
+- Wishlist tetap penyimpanan memori; dibersihkan saat identitas pengguna berubah.
+- Upload gambar belum ditambahkan; koordinasikan dengan pemilik modul produk.
+- Jangan menyatakan Auth/RLS sudah teruji hanya karena build Android berhasil.
+- Test SupabaseAuthRepositoryTest memakai respons HTTP tiruan, bukan Supabase nyata.
+- Jika profil tidak ada atau role tidak dikenal, aplikasi memblokir konten
+  dan menyediakan retry/logout; aplikasi tidak mengarang role atau profil.

@@ -79,6 +79,8 @@ fun HomeContent(
     onRetry: () -> Unit,
     onAdminClick: () -> Unit,
     modifier: Modifier = Modifier,
+    categories: List<String> = listOf(HomeUiState.CATEGORY_ALL),
+    customerName: String = "Pelanggan",
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isLandscape = maxWidth > maxHeight
@@ -116,6 +118,7 @@ fun HomeContent(
                     onSearchChange = onSearchChange,
                     onAdminClick = onAdminClick,
                     collapsed = isCollapsed,
+                    customerName = customerName,
                 )
             }
 
@@ -167,7 +170,7 @@ fun HomeContent(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(0.dp),
                         ) {
-                            items(HomeUiState.categories) { category ->
+                            items(categories) { category ->
                                 val selected = category == uiState.selectedCategory
                                 Box(
                                     modifier = Modifier
@@ -233,6 +236,7 @@ private fun CollapsiblePortraitHero(
     onSearchChange: (String) -> Unit,
     onAdminClick: () -> Unit,
     collapsed: Boolean,
+    customerName: String,
 ) {
     val heroHeight by animateDpAsState(
         targetValue = if (collapsed) 90.dp else 316.dp,
@@ -273,7 +277,7 @@ private fun CollapsiblePortraitHero(
                         color = White.copy(alpha = 0.72f),
                     )
                     Text(
-                        "Nadia",
+                        customerName,
                         style = OlehKanType.SubHeaderTitle,
                         color = White,
                     )
@@ -284,7 +288,7 @@ private fun CollapsiblePortraitHero(
                         icon = {
                             Icon(
                                 Icons.Filled.Storefront,
-                                contentDescription = "Toko saya",
+                                contentDescription = "Tentang toko",
                                 tint = White,
                                 modifier = Modifier.size(20.dp),
                             )
@@ -414,7 +418,7 @@ private fun LandscapeTopBar(
             icon = {
                 Icon(
                     Icons.Filled.Storefront,
-                    contentDescription = "Toko saya",
+                    contentDescription = "Tentang toko",
                     tint = White,
                     modifier = Modifier.size(20.dp),
                 )
