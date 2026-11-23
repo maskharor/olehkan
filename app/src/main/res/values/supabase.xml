@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Konfigurasi publik project, bukan credential admin.
+         Isi dari Supabase Settings > API. Jangan masukkan service-role/secret key. -->
+    <string name="supabase_url" translatable="false">https://vocuavzynbsiqwtbcehx.supabase.co</string>
+    <string name="supabase_publishable_key" translatable="false">sb_publishable_YPLwzFQ_wmN8kpLzM7zfBg_6p4UTyLV</string>
+</resources>
