@@ -15,7 +15,6 @@ data class HomeUiState(
 ) {
     companion object {
         const val CATEGORY_ALL = "Semua"
-        val categories: List<String> = listOf(CATEGORY_ALL, "Makanan", "Camilan", "Manisan")
     }
     val isEmptyFilterResult: Boolean
         get() = !isLoading && errorMessage == null &&

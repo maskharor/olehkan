@@ -1,6 +1,16 @@
 package com.olehkan.olehkan.ui.navigation
 
 import androidx.compose.runtime.Composable
+import com.olehkan.olehkan.data.model.UserProfile
+import com.olehkan.olehkan.data.model.UserRole
+import com.olehkan.olehkan.ui.screens.auth.AuthViewModel
+import com.olehkan.olehkan.ui.screens.admin.AdminDashboardScreen
+import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.olehkan.olehkan.data.repository.CategoryRepositoryProvider
+import com.olehkan.olehkan.ui.screens.category.CategoryViewModelFactory
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,19 +28,27 @@ import com.olehkan.olehkan.ui.screens.reviews.ReviewsScreen
 @Composable
 fun OlehKanNavHost(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
+    profile: UserProfile,
 ) {
+    val context = LocalContext.current
+    val categoryFactory = remember(context.applicationContext) {
+        CategoryViewModelFactory(CategoryRepositoryProvider.get(context))
+    }
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route,
+        startDestination = if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Home.route,
     ) {
 
         composable(Screen.Home.route) {
             HomeScreen(
+                categoryViewModel = viewModel(factory = categoryFactory),
+                customerName = profile.fullName,
                 onProductClick = { productId ->
                     navController.navigate(Screen.Detail.createRoute(productId))
                 },
                 onAdminClick = {
-                    navController.navigate(Screen.Admin.route)
+                    navController.navigate(if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Store.route)
                 },
             )
         }
@@ -53,8 +71,21 @@ fun OlehKanNavHost(
 
         composable(Screen.Profile.route) {
             ProfileScreen(
+                viewModel = authViewModel,
+                onEditClick = {
+                    authViewModel.prepareEditProfile()
+                    navController.navigate(Screen.EditProfile.route)
+                },
+                onBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Home.route) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onCategoriesClick = { navController.navigate(Screen.Categories.route) },
                 onAdminClick = {
-                    navController.navigate(Screen.Admin.route)
+                    navController.navigate(if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Store.route)
                 },
                 onReviewsClick = {
                     navController.navigate(Screen.Reviews.createRoute(null))
@@ -77,7 +108,7 @@ fun OlehKanNavHost(
                     navController.navigate(Screen.Reviews.createRoute(id))
                 },
                 onStoreClick = {
-                    navController.navigate(Screen.Admin.route)
+                    navController.navigate(Screen.Store.route)
                 },
             )
         }
@@ -115,10 +146,33 @@ fun OlehKanNavHost(
             )
         }
 
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(authViewModel, onBack = { navController.popBackStack() })
+        }
+        composable(Screen.AdminDashboard.route) {
+            AdminRoute(profile.role == UserRole.ADMIN, onBack = { navController.popBackStack() }) {
+                AdminDashboardScreen(
+                    profile = profile,
+                    onCategories = { navController.navigate(Screen.Categories.route) },
+                    onProfile = { navController.navigate(Screen.Profile.route) },
+                )
+            }
+        }
+        categoryNavigation(navController, categoryFactory, isAdmin = profile.role == UserRole.ADMIN)
+
+        // Route lama tetap ada, tetapi kini mengikuti pembatasan akses admin.
         composable(Screen.Admin.route) {
-            AdminScreen(
-                onBack = { navController.popBackStack() },
-            )
+            AdminRoute(profile.role == UserRole.ADMIN, onBack = { navController.popBackStack() }) {
+                AdminDashboardScreen(
+                    profile = profile,
+                    onCategories = { navController.navigate(Screen.Categories.route) },
+                    onProfile = { navController.navigate(Screen.Profile.route) },
+                )
+            }
+        }
+        composable(Screen.Store.route) {
+            // Gunakan ulang tampilan profil toko yang sudah dibuat anggota kelompok.
+            AdminScreen(onBack = { navController.popBackStack() })
         }
     }
 }
