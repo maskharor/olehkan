@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import android.util.Log
 
 class BackendException(val statusCode: Int, val errorCode: String, message: String) : IOException(message)
 
@@ -71,6 +72,17 @@ class SupabaseHttp(
                 val json = runCatching { JSONObject(text) }.getOrNull()
                 val code = json?.optString("error_code")?.takeIf { it.isNotBlank() }
                     ?: json?.optString("code").orEmpty()
+                Log.e(
+                    "SupabaseHttp",
+                    """
+                    REQUEST FAILED
+                    Method: $method
+                    Path: $path
+                    HTTP Status: ${response.code}
+                    Error Code: $code
+                    Response: $text
+                    """.trimIndent()
+                )
                 val message = when {
                     code == "invalid_credentials" -> "Email atau password salah."
                     code == "email_not_confirmed" -> "Verifikasi email sebelum login."

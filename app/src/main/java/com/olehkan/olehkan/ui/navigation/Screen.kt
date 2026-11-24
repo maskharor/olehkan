@@ -7,6 +7,19 @@ sealed class Screen(val route: String) {
     data object Favorites : Screen("favorites")
     data object Orders : Screen("orders")
     data object Profile : Screen("profile")
+    data object OrderDetail : Screen("order-detail/{orderId}") {
+        const val ARG_ORDER_ID = "orderId"
+
+        fun createRoute(orderId: String): String =
+            "order-detail/$orderId"
+    }
+
+    data object Payment : Screen("payment/{orderId}") {
+        const val ARG_ORDER_ID = "orderId"
+
+        fun createRoute(orderId: String): String =
+            "payment/$orderId"
+    }
 
     data object Detail : Screen("detail/{productId}") {
         fun createRoute(productId: Int): String = "detail/$productId"
