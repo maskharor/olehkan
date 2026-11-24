@@ -15,6 +15,7 @@ import com.olehkan.olehkan.ui.theme.OlehKanType
 @Composable
 fun CheckoutScreen(
     productId: Int,
+    quantity: Int = 1,
     onBack: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -27,6 +28,7 @@ fun CheckoutScreen(
     ) {
         Text("CHECKOUT", style = OlehKanType.H1)
         Text("productId = $productId", style = OlehKanType.Body)
+        Text("Jumlah = $quantity", style = OlehKanType.Body)
         Button(onClick = onDone) {
             Text("Bayar & Selesai")
         }

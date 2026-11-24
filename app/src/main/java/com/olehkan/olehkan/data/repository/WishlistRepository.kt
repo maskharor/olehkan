@@ -10,5 +10,8 @@ interface WishlistRepository {
     suspend fun removeFromFavorites(productId: Int): Boolean
     suspend fun toggleFavorite(productId: Int): Boolean
     fun isFavorite(productId: Int): Boolean
-}
 
+    suspend fun addToWishlist(productUuid: String): Boolean
+    suspend fun removeFromWishlist(productUuid: String): Boolean
+    fun clearCache()
+}

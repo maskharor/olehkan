@@ -66,7 +66,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.olehkan.olehkan.data.AppContainer
 import coil.compose.AsyncImage
 import com.olehkan.olehkan.data.model.Product
 import com.olehkan.olehkan.data.model.RatingSummary
@@ -98,7 +100,11 @@ fun ReviewsScreen(
     productId: Int?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ReviewsViewModel = viewModel(),
+    viewModel: ReviewsViewModel = viewModel(
+        factory = ReviewsViewModelFactory(
+            AppContainer.get(LocalContext.current).products,
+        ),
+    ),
 ) {
     LaunchedEffect(productId) {
         viewModel.load(productId)

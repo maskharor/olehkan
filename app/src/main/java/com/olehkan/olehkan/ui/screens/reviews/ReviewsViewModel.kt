@@ -3,7 +3,7 @@ package com.olehkan.olehkan.ui.screens.reviews
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.olehkan.olehkan.data.model.Review
-import com.olehkan.olehkan.data.repository.DummyProductRepository
+import androidx.lifecycle.ViewModelProvider
 import com.olehkan.olehkan.data.repository.ProductRepository
 import com.olehkan.olehkan.data.repository.ReviewRepository
 import com.olehkan.olehkan.data.repository.ReviewRepositoryProvider
@@ -18,7 +18,7 @@ import java.util.Locale
 
 class ReviewsViewModel(
     private val reviewRepository: ReviewRepository = ReviewRepositoryProvider.get(),
-    private val productRepository: ProductRepository = DummyProductRepository(),
+    private val productRepository: ProductRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewsUiState())
@@ -229,5 +229,18 @@ class ReviewsViewModel(
             ReviewsUiState.FILTER_1_STAR -> list.filter { it.rating == 1 }
             else -> list
         }
+    }
+}
+
+class ReviewsViewModelFactory(
+    private val productRepository: ProductRepository,
+    private val reviewRepository: ReviewRepository = ReviewRepositoryProvider.get(),
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ReviewsViewModel::class.java)) {
+            return ReviewsViewModel(reviewRepository, productRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

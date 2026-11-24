@@ -90,6 +90,43 @@ class SupabaseHttp(
         }
     }
 
+    suspend fun requestBytes(
+        method: String,
+        path: String,
+        token: String? = null,
+        bytes: ByteArray,
+        contentType: String,
+    ): String = withContext(Dispatchers.IO) {
+        checkConfiguration()
+        val requestBody = bytes.toRequestBody(contentType.toMediaType())
+        val request = Request.Builder()
+            .url(baseUrl.trimEnd('/') + path)
+            .header("apikey", publicKey)
+            .header("Accept", "application/json")
+            .apply { if (token != null) header("Authorization", "Bearer $token") }
+            .header("x-upsert", "true")
+            .method(method, requestBody)
+            .build()
+        client.newCall(request).execute().use { response ->
+            val text = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                val json = runCatching { JSONObject(text) }.getOrNull()
+                val code = json?.optString("error_code")?.takeIf { it.isNotBlank() }
+                    ?: json?.optString("code").orEmpty()
+                val message = when {
+                    response.code == 401 -> "Kredensial atau sesi tidak valid. Silakan login kembali."
+                    response.code == 403 || code == "42501" -> "Anda tidak memiliki izin untuk mengunggah gambar ini."
+                    response.code == 413 -> "Ukuran gambar melebihi batas 5 MB."
+                    response.code >= 500 -> "Layanan sedang bermasalah. Silakan coba lagi."
+                    else -> "Upload gambar gagal. Periksa koneksi dan format file."
+                }
+                throw BackendException(response.code, code, message)
+            }
+            val publicPath = path.removePrefix("/storage/v1/object/")
+            baseUrl.trimEnd('/') + "/storage/v1/object/public/" + publicPath
+        }
+    }
+
     companion object {
         fun encode(value: String): String = URLEncoder.encode(value, "UTF-8")
     }
