@@ -13,39 +13,32 @@ data class ReviewsUiState(
     val ratingSummary: RatingSummary = RatingSummary(),
     val selectedFilter: String = FILTER_ALL,
     val searchQuery: String = "",
-    val isWritingReviewSheetOpen: Boolean = false,
-    val newReviewRating: Int = 5,
-    val newReviewComment: String = "",
-    val newReviewVariant: String = "Variasi Default",
-    val selectedNewTags: Set<String> = emptySet(),
+    val isFormSheetOpen: Boolean = false,
+    val editingReview: Review? = null,
+    val formRating: Int = 5,
+    val formReviewText: String = "",
     val isSubmitting: Boolean = false,
     val userMessage: String? = null,
     val errorMessage: String? = null,
 ) {
+    val isEditing: Boolean
+        get() = editingReview != null
+
     companion object {
         const val FILTER_ALL = "Semua"
-        const val FILTER_5_STAR = "5★ Star"
-        const val FILTER_4_STAR = "4★ Star"
-        const val FILTER_3_STAR = "3★ Star"
-        const val FILTER_WITH_PHOTO = "Dengan Foto"
-        const val FILTER_WITH_COMMENT = "Dengan Komentar"
+        const val FILTER_5_STAR = "Bintang 5"
+        const val FILTER_4_STAR = "Bintang 4"
+        const val FILTER_3_STAR = "Bintang 3"
+        const val FILTER_2_STAR = "Bintang 2"
+        const val FILTER_1_STAR = "Bintang 1"
 
         val filterOptions = listOf(
             FILTER_ALL,
             FILTER_5_STAR,
             FILTER_4_STAR,
             FILTER_3_STAR,
-            FILTER_WITH_PHOTO,
-            FILTER_WITH_COMMENT,
-        )
-
-        val quickTags = listOf(
-            "Rasa Enak & Autentik",
-            "Pengemasan Rapi",
-            "Pengiriman Cepat",
-            "Segar & Berkualitas",
-            "Harga Worth It",
-            "Sesuai Deskripsi",
+            FILTER_2_STAR,
+            FILTER_1_STAR,
         )
     }
 }
