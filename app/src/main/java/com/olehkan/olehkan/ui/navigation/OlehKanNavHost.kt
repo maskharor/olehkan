@@ -11,7 +11,10 @@ import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.olehkan.olehkan.data.AppContainer
 import com.olehkan.olehkan.data.repository.CategoryRepositoryProvider
+import com.olehkan.olehkan.ui.screens.admin.productform.AdminProductFormViewModelFactory
+import com.olehkan.olehkan.ui.screens.admin.productform.AdminProductListViewModelFactory
 import com.olehkan.olehkan.ui.screens.category.CategoryViewModelFactory
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -37,6 +40,13 @@ fun OlehKanNavHost(
     val context = LocalContext.current
     val categoryFactory = remember(context.applicationContext) {
         CategoryViewModelFactory(CategoryRepositoryProvider.get(context))
+    }
+    val productFormFactory = remember(context.applicationContext) {
+        val container = AppContainer.get(context.applicationContext)
+        AdminProductFormViewModelFactory(container.products, container.categories)
+    }
+    val productListFactory = remember(context.applicationContext) {
+        AdminProductListViewModelFactory(AppContainer.get(context.applicationContext).products)
     }
     NavHost(
         navController = navController,
@@ -202,11 +212,13 @@ fun OlehKanNavHost(
                     onCategories = { navController.navigate(Screen.Categories.route) },
                     onCategoryClick = { id -> navController.navigate(Screen.CategoryDetail.createRoute(id)) },
                     onAddCategory = { navController.navigate(Screen.CategoryForm.createRoute()) },
+                    onProducts = { navController.navigate(Screen.AdminProducts.route) },
                     onProfile = { navController.navigate(Screen.Profile.route) },
                 )
             }
         }
         categoryNavigation(navController, categoryFactory, isAdmin = profile.role == UserRole.ADMIN)
+        productNavigation(navController, productFormFactory, productListFactory, isAdmin = profile.role == UserRole.ADMIN)
 
         // Route lama tetap ada, tetapi kini mengikuti pembatasan akses admin.
         composable(Screen.Admin.route) {
@@ -216,6 +228,7 @@ fun OlehKanNavHost(
                     onCategories = { navController.navigate(Screen.Categories.route) },
                     onCategoryClick = { id -> navController.navigate(Screen.CategoryDetail.createRoute(id)) },
                     onAddCategory = { navController.navigate(Screen.CategoryForm.createRoute()) },
+                    onProducts = { navController.navigate(Screen.AdminProducts.route) },
                     onProfile = { navController.navigate(Screen.Profile.route) },
                 )
             }

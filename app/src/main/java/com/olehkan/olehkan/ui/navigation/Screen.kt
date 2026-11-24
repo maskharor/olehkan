@@ -35,6 +35,13 @@ sealed class Screen(val route: String) {
             if (categoryId == null) "category-form" else "category-form?categoryId=$categoryId"
     }
 
+    data object AdminProducts : Screen("admin-products")
+
+    data object ProductForm : Screen("product-form?productUuid={productUuid}") {
+        fun createRoute(productUuid: String? = null): String =
+            if (productUuid == null) "product-form" else "product-form?productUuid=$productUuid"
+    }
+
     data object Store : Screen("store")
     data object AdminDashboard : Screen("admin-dashboard")
     data object EditProfile : Screen("edit-profile")
