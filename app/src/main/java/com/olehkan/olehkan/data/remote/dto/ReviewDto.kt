@@ -1,5 +1,6 @@
 package com.olehkan.olehkan.data.remote.dto
 
+import com.olehkan.olehkan.data.model.ProductIdMapping
 import com.olehkan.olehkan.data.model.Review
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -16,15 +17,15 @@ data class ReviewDto(
     @SerialName("updated_at") val updatedAt: String? = null,
 )
 
-fun ReviewDto.toDomain(currentUserId: String = "00000000-0000-0000-0000-000000000000"): Review {
-    val pId = productId.toIntOrNull() ?: 1
-    val uId = userId ?: "00000000-0000-0000-0000-000000000000"
-    val isMine = (uId == currentUserId || uId == "00000000-0000-0000-0000-000000000000")
+fun ReviewDto.toDomain(currentUserId: String = ""): Review {
+    val intProductId = ProductIdMapping.toId(productId)
+    val uId = userId ?: ""
+    val isMine = (uId.isNotBlank() && uId == currentUserId) || uId.isBlank()
 
     return Review(
         id = id ?: "",
         userId = uId,
-        productId = pId,
+        productId = intProductId,
         orderItemId = orderItemId,
         userName = if (isMine) "Saya (Nadia)" else "Pelanggan OlehKan",
         rating = rating,
@@ -35,11 +36,12 @@ fun ReviewDto.toDomain(currentUserId: String = "00000000-0000-0000-0000-00000000
 }
 
 fun Review.toDto(): ReviewDto {
+    val uuidProduct = ProductIdMapping.toUuid(productId)
     return ReviewDto(
         id = if (id.isNotBlank() && !id.startsWith("rev_")) id else null,
-        userId = userId.ifBlank { "00000000-0000-0000-0000-000000000000" },
-        productId = productId.toString(),
-        orderItemId = orderItemId,
+        userId = userId.takeIf { it.isNotBlank() && it.contains("-") },
+        productId = uuidProduct,
+        orderItemId = orderItemId?.takeIf { it.isNotBlank() && it.contains("-") },
         rating = rating,
         reviewText = reviewText,
     )

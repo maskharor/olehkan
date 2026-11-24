@@ -1,5 +1,7 @@
 package com.olehkan.olehkan.data.repository
 
+import android.util.Log
+import com.olehkan.olehkan.data.model.ProductIdMapping
 import com.olehkan.olehkan.data.model.RatingSummary
 import com.olehkan.olehkan.data.model.Review
 import com.olehkan.olehkan.data.remote.SupabaseClientManager
@@ -22,11 +24,12 @@ class SupabaseReviewRepository(
     override suspend fun getReviewsForProduct(productId: Int?): List<Review> {
         return try {
             val dtos = if (productId != null && productId > 0) {
+                val uuid = ProductIdMapping.toUuid(productId)
                 SupabaseClientManager.client
                     .from("reviews")
                     .select {
                         filter {
-                            eq("product_id", productId.toString())
+                            eq("product_id", uuid)
                         }
                     }
                     .decodeList<ReviewDto>()
@@ -48,6 +51,7 @@ class SupabaseReviewRepository(
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("SupabaseReviewRepository", "Error fetching reviews from Supabase: ${e.message}", e)
             val fallback = fallbackRepository.getReviewsForProduct(productId)
             _reviewsState.value = fallback
             fallback
@@ -93,6 +97,7 @@ class SupabaseReviewRepository(
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("SupabaseReviewRepository", "Error inserting review to Supabase: ${e.message}", e)
             fallbackRepository.addReview(review)
             _reviewsState.update { current ->
                 listOf(review) + current
@@ -120,6 +125,7 @@ class SupabaseReviewRepository(
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("SupabaseReviewRepository", "Error updating review in Supabase: ${e.message}", e)
             fallbackRepository.updateReview(review)
             _reviewsState.update { current ->
                 current.map { if (it.id == review.id) review else it }
@@ -142,6 +148,7 @@ class SupabaseReviewRepository(
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("SupabaseReviewRepository", "Error deleting review from Supabase: ${e.message}", e)
             fallbackRepository.deleteReview(reviewId)
             _reviewsState.update { current ->
                 current.filterNot { it.id == reviewId }

@@ -1,9 +1,9 @@
 package com.olehkan.olehkan.ui.screens.reviews
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.olehkan.olehkan.data.model.Review
-import androidx.lifecycle.ViewModelProvider
 import com.olehkan.olehkan.data.repository.ProductRepository
 import com.olehkan.olehkan.data.repository.ReviewRepository
 import com.olehkan.olehkan.data.repository.ReviewRepositoryProvider
@@ -128,7 +128,7 @@ class ReviewsViewModel(
     fun saveReview() {
         val currentState = _uiState.value
         if (currentState.formReviewText.isBlank()) {
-            _uiState.update { it.copy(userMessage = "Silakan tulis testimoni ulasan terlebih dahulu.") }
+            _uiState.update { it.copy(userMessage = "Silakan isi testimoni ulasan terlebih dahulu.") }
             return
         }
 
@@ -158,7 +158,7 @@ class ReviewsViewModel(
                             isFormSheetOpen = false,
                             formReviewText = "",
                             formRating = 5,
-                            userMessage = "Ulasan berhasil dikirim ke Supabase!",
+                            userMessage = "Ulasan berhasil dikirim.",
                         )
                     }
                 } else {
@@ -175,7 +175,7 @@ class ReviewsViewModel(
                             editingReview = null,
                             formReviewText = "",
                             formRating = 5,
-                            userMessage = "Ulasan berhasil diperbarui di Supabase!",
+                            userMessage = "Ulasan berhasil diperbarui.",
                         )
                     }
                 }
@@ -184,7 +184,7 @@ class ReviewsViewModel(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        userMessage = "Gagal menyimpan ulasan: ${e.message}",
+                        userMessage = "Gagal menyimpan ulasan. Silakan coba lagi.",
                     )
                 }
             }
@@ -196,12 +196,12 @@ class ReviewsViewModel(
             try {
                 reviewRepository.deleteReview(reviewId)
                 _uiState.update {
-                    it.copy(userMessage = "Ulasan berhasil dihapus dari Supabase!")
+                    it.copy(userMessage = "Ulasan berhasil dihapus.")
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.update {
-                    it.copy(userMessage = "Gagal menghapus ulasan: ${e.message}")
+                    it.copy(userMessage = "Gagal menghapus ulasan. Silakan coba lagi.")
                 }
             }
         }
