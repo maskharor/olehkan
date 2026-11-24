@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +27,6 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,17 +36,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,17 +55,15 @@ import com.olehkan.olehkan.ui.theme.White
 
 /**
  * Tampilan Onboarding / Welcome Screen aplikasi OlehKan dengan Tema Terang & Bersih (Light & Clean).
- * Selaras dengan tema visual OlehKan:
- * - Latar belakang putih bersih (#FFFFFF) dengan gradasi mint lembut (#F2FAF5) di bagian atas.
- * - Bagian atas: Logo R.drawable.ic_olehkan_icon dan R.drawable.ic_olehkan_text rapi + kartu ilustrasi oleh-oleh nusantara.
- * - Bagian tengah: Headline "Bawa pulang cerita dari setiap daerah." (#14452F), deskripsi abu-abu gelap, dan 2 chip minimalis.
- * - Bagian bawah: Indikator dot, tombol pill hijau brand "Mulai Jelajahi Oleh-Oleh →", serta baris rapi opsi Masuk / Masuk Toko.
+ * - Tanpa indikator dot (tampilan statis tunggal)
+ * - Tanpa tautan "Masuk Toko" (role dideteksi otomatis saat login)
+ * - Tombol utama: "Mulai Sekarang →"
+ * - Teks ajakan centered: "Belum punya akun? Daftar"
  */
 @Composable
 fun WelcomeScreen(
-    onExploreClick: () -> Unit,
-    onLoginClick: () -> Unit,
-    onStoreClick: () -> Unit,
+    onStartClick: () -> Unit,
+    onRegisterClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -168,7 +160,7 @@ fun WelcomeScreen(
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        // Subtle gradient overlay at top & bottom of image
+                        // Gradient overlay halus
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -183,7 +175,7 @@ fun WelcomeScreen(
                                 )
                         )
 
-                        // Floating Badges inside the illustration
+                        // Floating Badges inside illustration
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -252,7 +244,7 @@ fun WelcomeScreen(
                             }
                         }
 
-                        // Caption at bottom of illustration image
+                        // Caption di bawah ilustrasi
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
@@ -405,35 +397,12 @@ fun WelcomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            // Spacer proporsional antara chip keunggulan dengan tombol utama (tanpa pager dots)
+            Spacer(modifier = Modifier.height(36.dp))
 
-            // 3. BAGIAN BAWAH: Indikator Dot
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 24.dp, height = 6.dp)
-                        .background(Color(0xFF1F5A45), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(Color(0xFFD1DDD7), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(Color(0xFFD1DDD7), CircleShape)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Tombol Utama Berbentuk Pill Hijau Brand "Mulai Jelajahi Oleh-Oleh →"
+            // 3. BAGIAN BAWAH: Tombol Utama "Mulai Sekarang →"
             Button(
-                onClick = onExploreClick,
+                onClick = onStartClick,
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF1F5A45),
@@ -449,7 +418,7 @@ fun WelcomeScreen(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "Mulai Jelajahi Oleh-Oleh",
+                        text = "Mulai Sekarang",
                         style = PlusJakartaSans.let {
                             androidx.compose.ui.text.TextStyle(
                                 fontFamily = it,
@@ -471,48 +440,31 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Baris Rapi: "Sudah punya akun? Masuk" di kiri dan "Masuk Toko >" di kanan
+            // Satu baris teks rata tengah: "Belum punya akun? Daftar"
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .clickable { onRegisterClick() }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.clickable { onLoginClick() },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Sudah punya akun? ",
-                        style = OlehKanType.BodySmall,
-                        color = Color(0xFF5A6661),
-                    )
-                    Text(
-                        text = "Masuk",
-                        style = OlehKanType.BodyBold,
-                        color = Color(0xFF1F5A45),
-                        textDecoration = TextDecoration.Underline,
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.clickable { onStoreClick() },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Masuk Toko",
-                        style = OlehKanType.BodyBold,
-                        color = Color(0xFFE97832),
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Icon(
-                        imageVector = Icons.Outlined.ChevronRight,
-                        contentDescription = null,
-                        tint = Color(0xFFE97832),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                Text(
+                    text = "Belum punya akun? ",
+                    style = OlehKanType.BodySmall,
+                    color = Color(0xFF5A6661),
+                )
+                Text(
+                    text = "Daftar",
+                    style = PlusJakartaSans.let {
+                        androidx.compose.ui.text.TextStyle(
+                            fontFamily = it,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                        )
+                    },
+                    color = Color(0xFF1F5A45),
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -525,9 +477,8 @@ fun WelcomeScreen(
 private fun WelcomeScreenPreview() {
     OlehKanTheme {
         WelcomeScreen(
-            onExploreClick = {},
-            onLoginClick = {},
-            onStoreClick = {},
+            onStartClick = {},
+            onRegisterClick = {},
         )
     }
 }

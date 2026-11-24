@@ -3,12 +3,10 @@ package com.olehkan.olehkan.data
 import android.content.Context
 import com.olehkan.olehkan.data.auth.EncryptedSessionStore
 import com.olehkan.olehkan.data.network.SupabaseHttp
-import com.olehkan.olehkan.data.preferences.AppPreferences
 import com.olehkan.olehkan.data.repository.SupabaseAuthRepository
 import com.olehkan.olehkan.data.repository.SupabaseCategoryRepository
 
 class AppContainer private constructor(context: Context) {
-    val preferences = AppPreferences(context)
     val auth = SupabaseAuthRepository(SupabaseHttp(context), EncryptedSessionStore(context))
     val categories = SupabaseCategoryRepository(auth,
         context.getSharedPreferences("olehkan_categories", Context.MODE_PRIVATE))

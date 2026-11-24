@@ -34,8 +34,6 @@ data class AccountUiState(
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val container = AppContainer.get(application)
     private val repository = container.auth
-    val preferences = container.preferences
-    val isFirstTime = preferences.isFirstTime
     val session = repository.session
     private val _uiState = MutableStateFlow(AccountUiState())
     val uiState = _uiState.asStateFlow()
@@ -43,11 +41,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     val showLogin = _showLogin.asStateFlow()
     private var restoreJob: Job? = null
 
-    fun setFirstTime(value: Boolean) {
-        preferences.setFirstTime(value)
+    fun openLogin() {
+        _uiState.update { it.copy(registering = false, error = null, message = null) }
+        _showLogin.value = true
     }
 
-    fun openLogin() {
+    fun openRegister() {
+        _uiState.update { it.copy(registering = true, error = null, message = null) }
         _showLogin.value = true
     }
 

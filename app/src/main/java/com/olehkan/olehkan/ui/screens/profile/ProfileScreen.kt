@@ -32,36 +32,7 @@ fun ProfileScreen(
 ) {
     val session by viewModel.session.collectAsStateWithLifecycle()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val profile = session.profile
-
-    if (profile == null) {
-        // Tampilan Profil dalam Mode Tamu (Pengguna belum login / setelah logout)
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            TextButton(onClick = onBack) { Text("← Kembali") }
-            Text("Profil Akun", style = OlehKanType.H1)
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Pengunjung", style = OlehKanType.H2)
-                    Text("tamu@olehkan.id", style = OlehKanType.Body)
-                    Text("Mode Tamu (Belum Masuk)", style = OlehKanType.BodySmall)
-                }
-            }
-            Text(
-                "Masuk atau buat akun baru untuk menyimpan alamat pengiriman, riwayat pesanan, dan ulasan produk nusantara Anda.",
-                style = OlehKanType.BodySmall,
-            )
-            Button(
-                onClick = { viewModel.openLogin() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Masuk ke Akun OlehKan")
-            }
-        }
-        return
-    }
+    val profile = session.profile ?: return
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
