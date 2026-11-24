@@ -9,13 +9,14 @@ interface ReviewRepository {
     suspend fun getReviewsForProduct(productId: Int?): List<Review>
     suspend fun getRatingSummary(productId: Int?): RatingSummary
     suspend fun addReview(review: Review)
-    suspend fun toggleHelpful(reviewId: String)
+    suspend fun updateReview(review: Review)
+    suspend fun deleteReview(reviewId: String)
 }
 
 object ReviewRepositoryProvider {
     private var instance: ReviewRepository? = null
 
     fun get(): ReviewRepository {
-        return instance ?: DummyReviewRepository().also { instance = it }
+        return instance ?: SupabaseReviewRepository().also { instance = it }
     }
 }

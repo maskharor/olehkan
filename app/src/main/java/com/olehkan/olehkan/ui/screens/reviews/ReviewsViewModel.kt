@@ -33,9 +33,7 @@ class ReviewsViewModel(
             try {
                 val product = if (productId != null && productId > 0) {
                     productRepository.getProductById(productId)
-                } else {
-                    null
-                }
+                } else null
 
                 reviewRepository.reviewsFlow.collect { allReviews ->
                     val relevantReviews = if (productId != null && productId > 0) {
@@ -87,40 +85,50 @@ class ReviewsViewModel(
         }
     }
 
-    fun openWriteReviewSheet() {
-        _uiState.update { it.copy(isWritingReviewSheetOpen = true) }
-    }
-
-    fun closeWriteReviewSheet() {
-        _uiState.update { it.copy(isWritingReviewSheetOpen = false) }
-    }
-
-    fun setNewReviewRating(rating: Int) {
-        _uiState.update { it.copy(newReviewRating = rating) }
-    }
-
-    fun setNewReviewComment(comment: String) {
-        _uiState.update { it.copy(newReviewComment = comment) }
-    }
-
-    fun toggleNewReviewTag(tag: String) {
-        _uiState.update { state ->
-            val current = state.selectedNewTags
-            val newTags = if (tag in current) current - tag else current + tag
-            state.copy(selectedNewTags = newTags)
+    fun openCreateForm() {
+        _uiState.update {
+            it.copy(
+                isFormSheetOpen = true,
+                editingReview = null,
+                formRating = 5,
+                formReviewText = "",
+            )
         }
     }
 
-    fun toggleHelpful(reviewId: String) {
-        viewModelScope.launch {
-            reviewRepository.toggleHelpful(reviewId)
+    fun openEditForm(review: Review) {
+        _uiState.update {
+            it.copy(
+                isFormSheetOpen = true,
+                editingReview = review,
+                formRating = review.rating,
+                formReviewText = review.reviewText,
+            )
         }
     }
 
-    fun submitReview() {
+    fun closeFormSheet() {
+        _uiState.update {
+            it.copy(
+                isFormSheetOpen = false,
+                editingReview = null,
+                formReviewText = "",
+            )
+        }
+    }
+
+    fun setFormRating(rating: Int) {
+        _uiState.update { it.copy(formRating = rating) }
+    }
+
+    fun setFormReviewText(text: String) {
+        _uiState.update { it.copy(formReviewText = text) }
+    }
+
+    fun saveReview() {
         val currentState = _uiState.value
-        if (currentState.newReviewComment.isBlank()) {
-            _uiState.update { it.copy(userMessage = "Silakan tulis ulasan terlebih dahulu.") }
+        if (currentState.formReviewText.isBlank()) {
+            _uiState.update { it.copy(userMessage = "Silakan tulis testimoni ulasan terlebih dahulu.") }
             return
         }
 
@@ -130,44 +138,70 @@ class ReviewsViewModel(
                 val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
                 val currentDate = dateFormat.format(Date())
 
-                val pId = currentState.productId ?: 1
-                val pName = currentState.product?.name ?: "Bakpia Pathok Premium"
-
-                val newReview = Review(
-                    id = "rev_${System.currentTimeMillis()}",
-                    productId = pId,
-                    productName = pName,
-                    userName = "Nadia (Anda)",
-                    rating = currentState.newReviewRating,
-                    date = currentDate,
-                    comment = currentState.newReviewComment.trim(),
-                    variant = "Varian: Original Premium",
-                    isVerifiedBuyer = true,
-                    images = emptyList(),
-                    helpfulCount = 0,
-                    isHelpful = false,
-                    tags = currentState.selectedNewTags.toList(),
-                )
-
-                reviewRepository.addReview(newReview)
-
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        isWritingReviewSheetOpen = false,
-                        newReviewComment = "",
-                        selectedNewTags = emptySet(),
-                        newReviewRating = 5,
-                        userMessage = "Ulasan berhasil dikirim! Terima kasih.",
+                val editing = currentState.editingReview
+                if (editing == null) {
+                    // Create New Review (Insert)
+                    val pId = currentState.productId ?: 1
+                    val newReview = Review(
+                        id = "rev_${System.currentTimeMillis()}",
+                        productId = pId,
+                        userName = "Nadia (Saya)",
+                        rating = currentState.formRating,
+                        reviewText = currentState.formReviewText.trim(),
+                        createdAt = currentDate,
+                        isMyReview = true,
                     )
+                    reviewRepository.addReview(newReview)
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            isFormSheetOpen = false,
+                            formReviewText = "",
+                            formRating = 5,
+                            userMessage = "Ulasan berhasil dikirim ke Supabase!",
+                        )
+                    }
+                } else {
+                    // Update Existing Review (Update)
+                    val updatedReview = editing.copy(
+                        rating = currentState.formRating,
+                        reviewText = currentState.formReviewText.trim(),
+                    )
+                    reviewRepository.updateReview(updatedReview)
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            isFormSheetOpen = false,
+                            editingReview = null,
+                            formReviewText = "",
+                            formRating = 5,
+                            userMessage = "Ulasan berhasil diperbarui di Supabase!",
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        userMessage = "Gagal mengirim ulasan: ${e.message}",
+                        userMessage = "Gagal menyimpan ulasan: ${e.message}",
                     )
+                }
+            }
+        }
+    }
+
+    fun deleteReview(reviewId: String) {
+        viewModelScope.launch {
+            try {
+                reviewRepository.deleteReview(reviewId)
+                _uiState.update {
+                    it.copy(userMessage = "Ulasan berhasil dihapus dari Supabase!")
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _uiState.update {
+                    it.copy(userMessage = "Gagal menghapus ulasan: ${e.message}")
                 }
             }
         }
@@ -182,9 +216,8 @@ class ReviewsViewModel(
         if (query.isNotBlank()) {
             val q = query.trim().lowercase(Locale.ROOT)
             list = list.filter {
-                it.comment.lowercase(Locale.ROOT).contains(q) ||
-                        it.userName.lowercase(Locale.ROOT).contains(q) ||
-                        it.productName.lowercase(Locale.ROOT).contains(q)
+                it.reviewText.lowercase(Locale.ROOT).contains(q) ||
+                        it.userName.lowercase(Locale.ROOT).contains(q)
             }
         }
 
@@ -192,8 +225,8 @@ class ReviewsViewModel(
             ReviewsUiState.FILTER_5_STAR -> list.filter { it.rating == 5 }
             ReviewsUiState.FILTER_4_STAR -> list.filter { it.rating == 4 }
             ReviewsUiState.FILTER_3_STAR -> list.filter { it.rating == 3 }
-            ReviewsUiState.FILTER_WITH_PHOTO -> list.filter { it.images.isNotEmpty() }
-            ReviewsUiState.FILTER_WITH_COMMENT -> list.filter { it.comment.isNotBlank() }
+            ReviewsUiState.FILTER_2_STAR -> list.filter { it.rating == 2 }
+            ReviewsUiState.FILTER_1_STAR -> list.filter { it.rating == 1 }
             else -> list
         }
     }
