@@ -7,12 +7,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -66,7 +68,7 @@ fun WelcomeScreen(
     onRegisterClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(
@@ -81,6 +83,8 @@ fun WelcomeScreen(
             )
             .statusBarsPadding()
     ) {
+        val minHeight = maxHeight
+
         // Elemen dekoratif siluet lembut di latar belakang
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
@@ -110,8 +114,10 @@ fun WelcomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 18.dp),
+                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .heightIn(min = minHeight - 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             // 1. BAGIAN ATAS: Logo Rapi (Ikon + Teks)
             Row(

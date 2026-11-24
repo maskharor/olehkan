@@ -7,8 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,14 +24,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material.icons.outlined.StarOutline
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -64,25 +60,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.olehkan.olehkan.data.AppContainer
 import coil.compose.AsyncImage
 import com.olehkan.olehkan.data.model.Product
 import com.olehkan.olehkan.data.model.RatingSummary
 import com.olehkan.olehkan.data.model.Review
-import com.olehkan.olehkan.data.model.SellerResponse
 import com.olehkan.olehkan.data.model.formattedPrice
 import com.olehkan.olehkan.data.repository.DummyReviewRepository
 import com.olehkan.olehkan.ui.theme.Dimens
 import com.olehkan.olehkan.ui.theme.Green
 import com.olehkan.olehkan.ui.theme.GreenDark
 import com.olehkan.olehkan.ui.theme.GreenLight
+import com.olehkan.olehkan.ui.theme.HeartRed
 import com.olehkan.olehkan.ui.theme.Ink
 import com.olehkan.olehkan.ui.theme.Line
 import com.olehkan.olehkan.ui.theme.Muted
@@ -103,7 +100,11 @@ fun ReviewsScreen(
     productId: Int?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ReviewsViewModel = viewModel(),
+    viewModel: ReviewsViewModel = viewModel(
+        factory = ReviewsViewModelFactory(
+            AppContainer.get(LocalContext.current).products,
+        ),
+    ),
 ) {
     LaunchedEffect(productId) {
         viewModel.load(productId)
@@ -127,13 +128,13 @@ fun ReviewsScreen(
         onBack = onBack,
         onFilterSelected = viewModel::onFilterSelected,
         onSearchQueryChanged = viewModel::onSearchQueryChanged,
-        onOpenWriteReview = viewModel::openWriteReviewSheet,
-        onCloseWriteReview = viewModel::closeWriteReviewSheet,
-        onSetRating = viewModel::setNewReviewRating,
-        onSetComment = viewModel::setNewReviewComment,
-        onToggleTag = viewModel::toggleNewReviewTag,
-        onSubmitReview = viewModel::submitReview,
-        onToggleHelpful = viewModel::toggleHelpful,
+        onOpenCreateForm = viewModel::openCreateForm,
+        onOpenEditForm = viewModel::openEditForm,
+        onCloseFormSheet = viewModel::closeFormSheet,
+        onSetRating = viewModel::setFormRating,
+        onSetReviewText = viewModel::setFormReviewText,
+        onSaveReview = viewModel::saveReview,
+        onDeleteReview = viewModel::deleteReview,
         onRetry = { viewModel.load(productId) },
         snackbarHostState = snackbarHostState,
         modifier = modifier,
@@ -147,13 +148,13 @@ fun ReviewsContent(
     onBack: () -> Unit,
     onFilterSelected: (String) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
-    onOpenWriteReview: () -> Unit,
-    onCloseWriteReview: () -> Unit,
+    onOpenCreateForm: () -> Unit,
+    onOpenEditForm: (Review) -> Unit,
+    onCloseFormSheet: () -> Unit,
     onSetRating: (Int) -> Unit,
-    onSetComment: (String) -> Unit,
-    onToggleTag: (String) -> Unit,
-    onSubmitReview: () -> Unit,
-    onToggleHelpful: (String) -> Unit,
+    onSetReviewText: (String) -> Unit,
+    onSaveReview: () -> Unit,
+    onDeleteReview: (String) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -193,7 +194,7 @@ fun ReviewsContent(
                         }
 
                         Text(
-                            text = if (uiState.productId != null) "Ulasan Produk" else "Semua Ulasan",
+                            text = if (uiState.productId != null) "Ulasan Produk" else "Semua Ulasan Pelanggan",
                             style = OlehKanType.SubHeaderTitle,
                             color = Ink,
                         )
@@ -207,14 +208,14 @@ fun ReviewsContent(
                         }
                     }
 
-                    // Search input expansion
+                    // Search Input Expansion
                     AnimatedVisibility(visible = isSearchExpanded) {
                         OutlinedTextField(
                             value = uiState.searchQuery,
                             onValueChange = onSearchQueryChanged,
                             placeholder = {
                                 Text(
-                                    "Cari kata kunci dalam ulasan...",
+                                    "Cari testimoni ulasan...",
                                     style = OlehKanType.BodySmall,
                                     color = SearchPlaceholder
                                 )
@@ -275,7 +276,7 @@ fun ReviewsContent(
                         contentPadding = PaddingValues(bottom = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        // Product Context Header Banner (if viewing specific product)
+                        // Product Context Header Banner
                         if (uiState.product != null) {
                             item {
                                 ProductHeaderBanner(product = uiState.product)
@@ -290,11 +291,11 @@ fun ReviewsContent(
                             )
                         }
 
-                        // Filter Chips Row
+                        // Filter Rating Bintang (LazyRow)
                         item {
                             Column {
                                 Text(
-                                    text = "FILTER ULASAN",
+                                    text = "FILTER RATING BINTANG",
                                     style = OlehKanType.Eyebrow,
                                     color = Orange,
                                     modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = 4.dp)
@@ -325,7 +326,7 @@ fun ReviewsContent(
                             }
                         }
 
-                        // Reviews Count Header & Action
+                        // Reviews Count & Write Review Action
                         item {
                             Row(
                                 modifier = Modifier
@@ -341,7 +342,7 @@ fun ReviewsContent(
                                 )
 
                                 OutlinedButton(
-                                    onClick = onOpenWriteReview,
+                                    onClick = onOpenCreateForm,
                                     shape = OlehKanShapes.Pill,
                                     border = BorderStroke(1.dp, Green),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Green),
@@ -358,7 +359,7 @@ fun ReviewsContent(
                             }
                         }
 
-                        // List of Customer Reviews
+                        // List of Customer Reviews (LazyColumn)
                         if (uiState.filteredReviews.isEmpty()) {
                             item {
                                 EmptyReviewsPlaceholder(searchQuery = uiState.searchQuery)
@@ -367,7 +368,8 @@ fun ReviewsContent(
                             items(uiState.filteredReviews, key = { it.id }) { review ->
                                 ReviewItemCard(
                                     review = review,
-                                    onToggleHelpful = { onToggleHelpful(review.id) },
+                                    onEdit = { onOpenEditForm(review) },
+                                    onDelete = { onDeleteReview(review.id) },
                                     modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
                                 )
                             }
@@ -377,19 +379,18 @@ fun ReviewsContent(
             }
         }
 
-        // Modal Bottom Sheet for Writing Customer Review
-        if (uiState.isWritingReviewSheetOpen) {
-            WriteReviewBottomSheet(
+        // Modal Bottom Sheet Form (Tulis & Edit Ulasan)
+        if (uiState.isFormSheetOpen) {
+            WriteOrEditReviewBottomSheet(
                 product = uiState.product,
-                rating = uiState.newReviewRating,
-                comment = uiState.newReviewComment,
-                selectedTags = uiState.selectedNewTags,
+                editingReview = uiState.editingReview,
+                rating = uiState.formRating,
+                reviewText = uiState.formReviewText,
                 isSubmitting = uiState.isSubmitting,
                 onRatingChanged = onSetRating,
-                onCommentChanged = onSetComment,
-                onTagToggled = onToggleTag,
-                onDismiss = onCloseWriteReview,
-                onSubmit = onSubmitReview,
+                onReviewTextChanged = onSetReviewText,
+                onDismiss = onCloseFormSheet,
+                onSubmit = onSaveReview,
             )
         }
     }
@@ -483,7 +484,6 @@ private fun ProductHeaderBanner(product: Product) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RatingSummarySection(
     summary: RatingSummary,
@@ -547,7 +547,7 @@ private fun RatingSummarySection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                // Left column: Rating score
+                // Left Column: Big score
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.width(110.dp)
@@ -590,7 +590,7 @@ private fun RatingSummarySection(
                         .background(Line)
                 )
 
-                // Right column: Rating bars (5 to 1 star)
+                // Right Column: Star rating breakdown bars
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -631,39 +631,6 @@ private fun RatingSummarySection(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Line, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Highlight Tags list
-            Text(
-                text = "Hal yang paling disukai pembeli:",
-                style = OlehKanType.CaptionBold,
-                color = Muted,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                summary.topTags.forEach { (tag, count) ->
-                    Surface(
-                        shape = OlehKanShapes.Pill,
-                        color = Paper,
-                        border = BorderStroke(1.dp, Line),
-                    ) {
-                        Text(
-                            text = "👍 $tag ($count)",
-                            style = OlehKanType.Caption,
-                            color = Ink,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -671,7 +638,8 @@ private fun RatingSummarySection(
 @Composable
 private fun ReviewItemCard(
     review: Review,
-    onToggleHelpful: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -681,7 +649,6 @@ private fun ReviewItemCard(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // User Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -715,14 +682,14 @@ private fun ReviewItemCard(
                                 color = Ink
                             )
 
-                            if (review.isVerifiedBuyer) {
+                            if (review.isMyReview) {
                                 Surface(
                                     shape = OlehKanShapes.Pill,
                                     color = Orange.copy(alpha = 0.12f),
                                 ) {
                                     Text(
-                                        text = "Pembeli Terverifikasi",
-                                        style = OlehKanType.Tiny.copy(fontWeight = FontWeight.Bold),
+                                        text = "Ulasan Saya",
+                                        style = OlehKanType.Tiny,
                                         color = Orange,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
@@ -731,197 +698,61 @@ private fun ReviewItemCard(
                         }
 
                         Text(
-                            text = review.date,
+                            text = review.createdAt,
                             style = OlehKanType.Caption,
                             color = Muted
                         )
                     }
                 }
+
+                // Edit / Delete buttons for user's review
+                if (review.isMyReview) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+                        IconButton(onClick = onEdit) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = "Edit Ulasan",
+                                tint = Green,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(onClick = onDelete) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "Hapus Ulasan",
+                                tint = HeartRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Rating Stars & Variant
+            // Rating Stars
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(5) { index ->
-                        Icon(
-                            imageVector = if (index < review.rating) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                            contentDescription = null,
-                            tint = StarGold,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-
-                review.variant?.let { variantText ->
-                    Text(
-                        text = "• $variantText",
-                        style = OlehKanType.Caption,
-                        color = Muted
+                repeat(5) { index ->
+                    Icon(
+                        imageVector = if (index < review.rating) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                        contentDescription = null,
+                        tint = StarGold,
+                        modifier = Modifier.size(15.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Review Comment Body
+            // Review Testimonial Text (review_text)
             Text(
-                text = review.comment,
+                text = review.reviewText,
                 style = OlehKanType.Body,
                 color = Ink,
                 lineHeight = 20.sp,
-            )
-
-            // Review Photos Thumbnails
-            if (review.images.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(review.images) { imageUrl ->
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(OlehKanShapes.Medium)
-                                .background(Muted.copy(alpha = 0.1f))
-                        ) {
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = "Foto ulasan pembeli",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.matchParentSize()
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Quick Feedback Tags (if present)
-            if (review.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    review.tags.forEach { tag ->
-                        Surface(
-                            shape = OlehKanShapes.Pill,
-                            color = GreenLight,
-                        ) {
-                            Text(
-                                text = "✓ $tag",
-                                style = OlehKanType.Tiny,
-                                color = GreenDark,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Seller Response Card
-            review.sellerResponse?.let { response ->
-                Spacer(modifier = Modifier.height(14.dp))
-                SellerResponseBox(response = response)
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = Line, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Helpful action footer
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Apakah ulasan ini membantu?",
-                    style = OlehKanType.Caption,
-                    color = Muted
-                )
-
-                Surface(
-                    onClick = onToggleHelpful,
-                    shape = OlehKanShapes.Pill,
-                    color = if (review.isHelpful) GreenLight else Paper,
-                    border = BorderStroke(1.dp, if (review.isHelpful) Green else Line),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (review.isHelpful) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                            contentDescription = "Bermanfaat",
-                            tint = if (review.isHelpful) Green else Muted,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Text(
-                            text = if (review.helpfulCount > 0) "Bermanfaat (${review.helpfulCount})" else "Bermanfaat",
-                            style = OlehKanType.CaptionBold,
-                            color = if (review.isHelpful) GreenDark else Muted,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SellerResponseBox(response: SellerResponse) {
-    Surface(
-        color = Paper,
-        shape = OlehKanShapes.Medium,
-        border = BorderStroke(1.dp, Green.copy(alpha = 0.2f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Storefront,
-                        contentDescription = null,
-                        tint = Green,
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Text(
-                        text = response.sellerName,
-                        style = OlehKanType.CaptionBold,
-                        color = Ink
-                    )
-                }
-
-                Text(
-                    text = response.date,
-                    style = OlehKanType.Tiny,
-                    color = Muted
-                )
-            }
-
-            Text(
-                text = response.message,
-                style = OlehKanType.BodySmall,
-                color = Ink.copy(alpha = 0.85f)
             )
         }
     }
@@ -950,17 +781,16 @@ private fun EmptyReviewsPlaceholder(searchQuery: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WriteReviewBottomSheet(
+private fun WriteOrEditReviewBottomSheet(
     product: Product?,
+    editingReview: Review?,
     rating: Int,
-    comment: String,
-    selectedTags: Set<String>,
+    reviewText: String,
     isSubmitting: Boolean,
     onRatingChanged: (Int) -> Unit,
-    onCommentChanged: (String) -> Unit,
-    onTagToggled: (String) -> Unit,
+    onReviewTextChanged: (String) -> Unit,
     onDismiss: () -> Unit,
     onSubmit: () -> Unit,
 ) {
@@ -978,7 +808,7 @@ private fun WriteReviewBottomSheet(
                 .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp)
         ) {
             Text(
-                text = "Tulis Ulasan Produk",
+                text = if (editingReview != null) "Edit Ulasan Saya" else "Tulis Ulasan Produk",
                 style = OlehKanType.SubHeaderTitle,
                 color = Ink
             )
@@ -990,13 +820,13 @@ private fun WriteReviewBottomSheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Interactive Star Rating Selector
+            // Interactive Rating Selector (1 to 5 Stars)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Berikan Penilaian Kamu",
+                    text = "Rating Bintang",
                     style = OlehKanType.CaptionBold,
                     color = Muted
                 )
@@ -1014,18 +844,18 @@ private fun WriteReviewBottomSheet(
                             contentDescription = "$starIndex Star",
                             tint = StarGold,
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .clickable { onRatingChanged(starIndex) }
                         )
                     }
                 }
 
                 val ratingLabel = when (rating) {
-                    5 -> "5 - Sangat Puas! 🎉"
-                    4 -> "4 - Bagus Banget! 👍"
-                    3 -> "3 - Cukup Baik 😊"
-                    2 -> "2 - Kurang Memuaskan 🙁"
-                    else -> "1 - Kecewa 😞"
+                    5 -> "5 Bintang - Sangat Puas! 🎉"
+                    4 -> "4 Bintang - Bagus Banget! 👍"
+                    3 -> "3 Bintang - Cukup Baik 😊"
+                    2 -> "2 Bintang - Kurang Memuaskan 🙁"
+                    else -> "1 Bintang - Kecewa 😞"
                 }
 
                 Text(
@@ -1038,52 +868,27 @@ private fun WriteReviewBottomSheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Quick Feedback Tags Selector
+            // Testimonial Text Input (review_text)
             Text(
-                text = "Pilih Keunggulan Produk (Opsional):",
+                text = "Tulis Testimoni / Ulasan:",
                 style = OlehKanType.CaptionBold,
                 color = Muted
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                ReviewsUiState.quickTags.forEach { tag ->
-                    val isSelected = tag in selectedTags
-                    Box(
-                        modifier = Modifier
-                            .clip(OlehKanShapes.Pill)
-                            .background(if (isSelected) Green else Paper)
-                            .clickable { onTagToggled(tag) }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = if (isSelected) "✓ $tag" else "+ $tag",
-                            style = OlehKanType.CaptionBold,
-                            color = if (isSelected) White else Muted
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Comment Input Field
             OutlinedTextField(
-                value = comment,
-                onValueChange = onCommentChanged,
+                value = reviewText,
+                onValueChange = onReviewTextChanged,
                 placeholder = {
                     Text(
-                        "Bagikan rasa, tekstur, atau pengalaman pengemasan untuk membantu pembeli lain...",
+                        "Tuliskan pengalaman jujur kamu menikmati produk oleh-oleh ini...",
                         style = OlehKanType.BodySmall,
                         color = SearchPlaceholder
                     )
                 },
-                minLines = 3,
-                maxLines = 5,
+                minLines = 4,
+                maxLines = 6,
                 shape = OlehKanShapes.Medium,
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Line,
@@ -1094,31 +899,12 @@ private fun WriteReviewBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Add Photo Attachment Mock Button
-            OutlinedButton(
-                onClick = { },
-                shape = OlehKanShapes.Medium,
-                border = BorderStroke(1.dp, Line),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Muted),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PhotoCamera,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Tambah Foto / Video Produk", style = OlehKanType.ButtonPrimary)
-            }
-
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Submit Button
+            // Submit Button (Simpan Ulasan)
             Button(
                 onClick = onSubmit,
-                enabled = !isSubmitting && comment.isNotBlank(),
+                enabled = !isSubmitting && reviewText.isNotBlank(),
                 shape = OlehKanShapes.Medium,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Green,
@@ -1135,7 +921,10 @@ private fun WriteReviewBottomSheet(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Kirim Ulasan", style = OlehKanType.ButtonLarge)
+                    Text(
+                        text = if (editingReview != null) "Perbarui Ulasan" else "Simpan Ulasan",
+                        style = OlehKanType.ButtonLarge
+                    )
                 }
             }
 
@@ -1171,13 +960,13 @@ private fun ReviewsScreenPreview() {
             onBack = {},
             onFilterSelected = {},
             onSearchQueryChanged = {},
-            onOpenWriteReview = {},
-            onCloseWriteReview = {},
+            onOpenCreateForm = {},
+            onOpenEditForm = {},
+            onCloseFormSheet = {},
             onSetRating = {},
-            onSetComment = {},
-            onToggleTag = {},
-            onSubmitReview = {},
-            onToggleHelpful = {},
+            onSetReviewText = {},
+            onSaveReview = {},
+            onDeleteReview = {},
             onRetry = {},
         )
     }

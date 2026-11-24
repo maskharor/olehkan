@@ -42,16 +42,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private var restoreJob: Job? = null
 
     fun openLogin() {
-        _uiState.update { it.copy(registering = false, error = null, message = null) }
+        _uiState.update { it.copy(registering = false, password = "", confirmation = "", error = null, message = null, fieldErrors = emptyMap()) }
         _showLogin.value = true
     }
 
     fun openRegister() {
-        _uiState.update { it.copy(registering = true, error = null, message = null) }
+        _uiState.update { it.copy(registering = true, password = "", confirmation = "", error = null, message = null, fieldErrors = emptyMap()) }
         _showLogin.value = true
     }
 
     fun closeLogin() {
+        _uiState.update { it.copy(error = null, message = null, fieldErrors = emptyMap()) }
         _showLogin.value = false
     }
 
@@ -69,9 +70,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 val user = it.profile?.id
                 if (user != previousUser) {
                     container.categories.clearCache()
-                    if (previousUser != null) {
-                        val wishlist = com.olehkan.olehkan.data.repository.WishlistRepositoryProvider.get()
-                        wishlist.favoriteIds.value.toList().forEach { id -> wishlist.removeFromFavorites(id) }
+                    container.wishlist.clearCache()
+                    if (it.status == SessionStatus.AUTHENTICATED) {
+                        try {
+                            container.wishlist.loadFavorites()
+                        } catch (_: Exception) {}
                     }
                 }
                 previousUser = user
@@ -84,10 +87,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         restoreJob = viewModelScope.launch { repository.restore() }
     }
 
-    fun onNameChange(value: String) { _uiState.update { it.copy(name = value) } }
-    fun onEmailChange(value: String) { _uiState.update { it.copy(email = value) } }
-    fun onPasswordChange(value: String) { _uiState.update { it.copy(password = value) } }
-    fun onConfirmationChange(value: String) { _uiState.update { it.copy(confirmation = value) } }
+    fun onNameChange(value: String) { _uiState.update { it.copy(name = value, error = null, fieldErrors = it.fieldErrors - "name") } }
+    fun onEmailChange(value: String) { _uiState.update { it.copy(email = value, error = null, fieldErrors = it.fieldErrors - "email") } }
+    fun onPasswordChange(value: String) { _uiState.update { it.copy(password = value, error = null, fieldErrors = it.fieldErrors - "password") } }
+    fun onConfirmationChange(value: String) { _uiState.update { it.copy(confirmation = value, error = null, fieldErrors = it.fieldErrors - "confirmation") } }
     fun togglePasswordVisibility() { _uiState.update { it.copy(showPassword = !it.showPassword) } }
     fun toggleRegistration() {
         _uiState.update { it.copy(registering = !it.registering, password = "", confirmation = "",
@@ -103,6 +106,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         val errors = buildMap {
             AccountValidator.emailError(email)?.let { put("email", it) }
             if (password.isEmpty()) put("password", "Password wajib diisi.")
+            else AccountValidator.passwordError(password)?.let { put("password", it) }
         }
         if (!validate(errors)) return
         perform {
@@ -117,14 +121,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             AccountValidator.nameError(name)?.let { put("name", it) }
             AccountValidator.emailError(email)?.let { put("email", it) }
             AccountValidator.passwordError(password)?.let { put("password", it) }
-            if (confirmation != password) put("confirmation", "Konfirmasi password tidak sesuai.")
+            if (confirmation.isEmpty()) put("confirmation", "Konfirmasi password wajib diisi.")
+            else if (confirmation != password) put("confirmation", "Konfirmasi password tidak cocok.")
         }
         if (!validate(errors)) return
         perform {
             val needsVerification = repository.register(name, email, password)
             _uiState.update { it.copy(password = "", confirmation = "") }
-            if (needsVerification) _uiState.update {
-                it.copy(message = "Periksa email untuk verifikasi akun, lalu kembali dan login. Jika email sudah terdaftar, gunakan halaman login.")
+            if (needsVerification) {
+                _uiState.update {
+                    it.copy(message = "Akun berhasil dibuat! Silakan periksa email untuk verifikasi akun, lalu kembali dan login.")
+                }
+            } else {
+                _showLogin.value = false
             }
         }
     }
@@ -154,7 +163,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun validate(errors: Map<String, String>): Boolean {
-        _uiState.update { it.copy(error = null, message = null, fieldErrors = errors, profileSaved = false) }
+        val firstError = errors.values.firstOrNull()
+        _uiState.update { it.copy(error = firstError, message = null, fieldErrors = errors, profileSaved = false) }
         return errors.isEmpty()
     }
 
