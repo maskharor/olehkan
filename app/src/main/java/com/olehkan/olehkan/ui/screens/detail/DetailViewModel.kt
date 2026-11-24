@@ -35,6 +35,10 @@ class DetailViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
+                try {
+                    wishlistRepository.loadFavorites()
+                } catch (_: Exception) {}
+
                 val product = productRepository.getProductById(productId)
                 val isFav = wishlistRepository.isFavorite(productId)
                 _uiState.update {
@@ -67,19 +71,4 @@ class DetailViewModel(
             wishlistRepository.toggleFavorite(currentProductId)
         }
     }
-
-    fun removeFromWishlist() {
-        if (currentProductId <= 0) return
-        viewModelScope.launch {
-            wishlistRepository.removeFromFavorites(currentProductId)
-        }
-    }
-
-    fun addToWishlist() {
-        if (currentProductId <= 0) return
-        viewModelScope.launch {
-            wishlistRepository.addToFavorites(currentProductId)
-        }
-    }
 }
-

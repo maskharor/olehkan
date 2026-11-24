@@ -15,11 +15,12 @@ data class Product(
     val sellerCity: String = place,
     val sellerRating: Double = 4.9,
     val sellerBadge: String = "Official Store",
+    val uuid: String = "",
 )
 
 fun Product.formattedPrice(): String = "Rp${price.toLong().toString().formatRupiah()}"
 
-private fun String.formatRupiah(): String {
+fun String.formatRupiah(): String {
     if (length <= 3) return this
     val result = StringBuilder()
     var count = 0
