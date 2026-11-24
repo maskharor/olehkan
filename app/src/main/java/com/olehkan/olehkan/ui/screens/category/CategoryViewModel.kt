@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.olehkan.olehkan.data.model.Category
 import com.olehkan.olehkan.data.model.CategoryNameValidator
 import com.olehkan.olehkan.data.repository.CategoryRepository
+import kotlinx.coroutines.Job
+import com.olehkan.olehkan.data.network.BackendException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +22,21 @@ data class CategoryUiState(
     val errorMessage: String? = null,
     val nameError: String? = null,
     val successMessage: String? = null,
-)
+    val query: String = "",
+    val filter: String = "Semua",
+    val alphabetical: Boolean = false,
+) {
+    val visibleCategories: List<Category> get() {
+        val filtered = categories.filter { category ->
+            category.name.contains(query.trim(), ignoreCase = true) && when (filter) {
+                "Bisa dikelola" -> category.canManage
+                "Dilindungi" -> category.isProtected || category.productCount > 0
+                else -> true
+            }
+        }
+        return if (alphabetical) filtered.sortedBy { it.name.lowercase(java.util.Locale.ROOT) } else filtered
+    }
+}
 
 class CategoryViewModel(
     private val repository: CategoryRepository,
@@ -29,6 +45,12 @@ class CategoryViewModel(
     private val _uiState = MutableStateFlow(CategoryUiState())
     val uiState = _uiState.asStateFlow()
     val name = savedStateHandle.getStateFlow("categoryName", "")
+    private var refreshJob: Job? = null
+
+    fun onQueryChange(value: String) { _uiState.update { it.copy(query = value) } }
+    fun onFilterChange(value: String) { _uiState.update { it.copy(filter = value) } }
+    fun toggleSort() { _uiState.update { it.copy(alphabetical = !it.alphabetical) } }
+    fun resetFilters() { _uiState.update { it.copy(query = "", filter = "Semua") } }
 
     init {
         viewModelScope.launch {
@@ -40,7 +62,8 @@ class CategoryViewModel(
     }
 
     fun refresh() {
-        viewModelScope.launch {
+        if (refreshJob?.isActive == true || _uiState.value.isSaving) return
+        refreshJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 repository.refresh()
@@ -101,7 +124,13 @@ class CategoryViewModel(
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _uiState.update {
-                    it.copy(isSaving = false, errorMessage = e.message ?: "Perubahan gagal disimpan.")
+                    it.copy(isSaving = false, errorMessage = when {
+                        e is BackendException && e.errorCode == "23503" ->
+                            "Kategori masih digunakan produk. Muat ulang data sebelum mencoba lagi."
+                        e is java.io.IOException && e !is BackendException ->
+                            "Tidak dapat terhubung. Periksa koneksi lalu coba lagi."
+                        else -> e.message ?: "Perubahan gagal disimpan."
+                    })
                 }
             }
         }
