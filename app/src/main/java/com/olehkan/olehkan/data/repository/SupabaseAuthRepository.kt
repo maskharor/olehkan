@@ -102,6 +102,8 @@ class SupabaseAuthRepository(
         }
     }
 
+    suspend fun signOut(): Boolean = logout()
+
     suspend fun updateProfile(fullName: String) {
         require(AccountValidator.nameError(fullName) == null) { AccountValidator.nameError(fullName).orEmpty() }
         val profile = _session.value.profile ?: throw IllegalStateException("Profil belum tersedia.")

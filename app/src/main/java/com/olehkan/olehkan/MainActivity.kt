@@ -21,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import com.olehkan.olehkan.data.model.UserRole
 import com.olehkan.olehkan.ui.components.BottomNavBar
 import com.olehkan.olehkan.ui.navigation.OlehKanNavHost
+import com.olehkan.olehkan.ui.navigation.Screen
 import com.olehkan.olehkan.ui.navigation.bottomNavRoutes
 import com.olehkan.olehkan.ui.screens.auth.AuthViewModel
 import com.olehkan.olehkan.ui.screens.auth.SessionGate
@@ -53,7 +54,7 @@ class MainActivity : ComponentActivity() {
                                         currentRoute = currentRoute,
                                         onNavigate = { route ->
                                             navController.navigate(route) {
-                                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                                popUpTo(Screen.Home.route) { saveState = true }
                                                 launchSingleTop = true
                                                 restoreState = true
                                             }

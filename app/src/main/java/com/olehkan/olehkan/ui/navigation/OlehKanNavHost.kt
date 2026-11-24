@@ -24,6 +24,7 @@ import com.olehkan.olehkan.ui.screens.home.HomeScreen
 import com.olehkan.olehkan.ui.screens.orders.OrdersScreen
 import com.olehkan.olehkan.ui.screens.profile.ProfileScreen
 import com.olehkan.olehkan.ui.screens.reviews.ReviewsScreen
+import com.olehkan.olehkan.ui.screens.splash.SplashScreen
 
 @Composable
 fun OlehKanNavHost(
@@ -39,6 +40,17 @@ fun OlehKanNavHost(
         navController = navController,
         startDestination = if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Home.route,
     ) {
+
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onFinish = {
+                    val destination = if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Home.route
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         composable(Screen.Home.route) {
             HomeScreen(

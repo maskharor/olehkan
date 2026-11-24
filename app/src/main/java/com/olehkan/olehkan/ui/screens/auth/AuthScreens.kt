@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +34,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.olehkan.olehkan.ui.theme.OlehKanType
 
 @Composable
-fun AuthScreen(viewModel: AuthViewModel) {
+fun AuthScreen(
+    viewModel: AuthViewModel,
+    onBack: (() -> Unit)? = null,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val session by viewModel.session.collectAsStateWithLifecycle()
     val registering = state.registering
@@ -44,7 +52,16 @@ fun AuthScreen(viewModel: AuthViewModel) {
             .verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Spacer(Modifier.height(24.dp))
+        if (onBack != null) {
+            IconButton(onClick = onBack, modifier = Modifier.offset(x = (-12).dp)) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Kembali",
+                )
+            }
+        } else {
+            Spacer(Modifier.height(24.dp))
+        }
         Text("OlehKan", style = OlehKanType.Hero)
         Text(if (registering) "Daftar sebagai pembeli" else "Selamat datang kembali", style = OlehKanType.H2)
         Text("Jelajahi oleh-oleh pilihan dari toko kami.", style = OlehKanType.Body)
