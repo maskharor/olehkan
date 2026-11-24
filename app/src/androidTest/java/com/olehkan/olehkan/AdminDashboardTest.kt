@@ -17,6 +17,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import org.json.JSONArray
+import org.json.JSONObject
+import java.math.BigDecimal
+import java.io.IOException
+import com.olehkan.olehkan.data.repository.AdminInventoryProduct
+import com.olehkan.olehkan.ui.screens.admin.CategoryInventoryState
 
 /** Respons dan state terisolasi; tidak menghubungi Supabase nyata. */
 class AdminDashboardTest {
@@ -93,4 +99,95 @@ class AdminDashboardTest {
         compose.onNodeWithText("Impor", useUnmergedTree = true).performClick()
         compose.runOnIdle { assertTrue(imported) }
     }
+
+    @Test fun inventoryPageKeepsMoneyPrecisionAndUsesStablePagination() = runBlocking {
+        var requested = ""
+        val rows = JSONArray()
+        repeat(21) { index ->
+            rows.put(JSONObject().put("id", "product-$index").put("name", "Produk $index")
+                .put("price", "45000.25").put("stock", index).put("image_url", JSONObject.NULL)
+                .put("is_active", true))
+        }
+        val repository = AdminDashboardRepository({ "{}" }, { path -> requested = path; rows.toString() })
+        val page = repository.loadProducts("category-a", 20)
+        assertEquals(20, page.products.size)
+        assertTrue(page.hasMore)
+        assertEquals(BigDecimal("45000.25"), page.products.first().price)
+        assertNull(page.products.first().imageUrl)
+        assertTrue(requested.contains("category_id=eq.category-a"))
+        assertTrue(requested.contains("order=created_at.asc,id.asc"))
+        assertTrue(requested.contains("limit=21&offset=20"))
+    }
+
+    @Test fun emptyInventoryIsNotAnErrorAndHasNoNextPage() = runBlocking {
+        val page = AdminDashboardRepository({ "{}" }, { "[]" }).loadProducts("a")
+        assertTrue(page.products.isEmpty())
+        assertFalse(page.hasMore)
+    }
+
+    @Test fun negativeStockIsRejected() = runBlocking {
+        val response = """[{"id":"p","name":"Produk","price":100,"stock":-1,"is_active":true}]"""
+        try {
+            AdminDashboardRepository({ "{}" }, { response }).loadProducts("a")
+            fail("Invalid stock should fail")
+        } catch (_: IllegalStateException) { }
+    }
+
+    @Test fun inventoryFailureIsNotConvertedIntoEmptySuccess() = runBlocking {
+        try {
+            AdminDashboardRepository({ "{}" }, { throw IOException("Offline test") }).loadProducts("a")
+            fail("Network error must remain an error")
+        } catch (_: IOException) { }
+    }
+
+    @Test fun categoryCanExpandCollapseAndOpenAddForm() {
+        var addClicked = false
+        compose.setContent {
+            var state by remember { mutableStateOf(AdminDashboardState(
+                loading = false, categoriesLoading = false, categories = listOf(Category("a", "Minuman")),
+                inventory = mapOf("a" to CategoryInventoryState(loaded = true, products = listOf(
+                    AdminInventoryProduct("p", "Wedang Jahe", BigDecimal("15000"), 12, null, true)
+                ))),
+            )) }
+            OlehKanTheme {
+                AdminDashboardContent(
+                    UserProfile("admin", "Admin Uji", "admin@example.test", UserRole.ADMIN),
+                    state, {}, {}, {}, {}, {}, {}, {}, {}, {},
+                    onAddCategory = { addClicked = true },
+                    onToggleCategory = { id -> state = state.copy(
+                        expandedCategoryId = if (state.expandedCategoryId == id) null else id) },
+                )
+            }
+        }
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Minuman"))
+        compose.onNodeWithText("Minuman").performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Wedang Jahe"))
+        compose.onNodeWithText("Tersedia 12 unit").assertExists()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Minuman"))
+        compose.onNodeWithText("Minuman").performClick()
+        compose.onNodeWithText("Wedang Jahe").assertDoesNotExist()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Tambah kategori"))
+        compose.onNodeWithText("Tambah kategori").performClick()
+        compose.runOnIdle { assertTrue(addClicked) }
+    }
+
+    @Test fun failedInventoryOffersRetryInsteadOfDummyProducts() {
+        var retried: String? = null
+        compose.setContent {
+            OlehKanTheme {
+                AdminDashboardContent(
+                    UserProfile("admin", "Admin Uji", "admin@example.test", UserRole.ADMIN),
+                    AdminDashboardState(loading = false, categoriesLoading = false,
+                        categories = listOf(Category("a", "Minuman")), expandedCategoryId = "a",
+                        inventory = mapOf("a" to CategoryInventoryState(error = "Produk tidak dapat dibaca"))),
+                    {}, {}, {}, {}, {}, {}, {}, {}, {},
+                    onLoadProducts = { id, more -> if (!more) retried = id },
+                )
+            }
+        }
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Coba lagi"))
+        compose.onNodeWithText("Coba lagi").performClick()
+        compose.runOnIdle { assertEquals("a", retried) }
+    }
+
 }

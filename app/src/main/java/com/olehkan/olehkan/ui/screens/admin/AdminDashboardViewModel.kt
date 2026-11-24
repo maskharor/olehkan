@@ -7,12 +7,22 @@ import com.olehkan.olehkan.data.AppContainer
 import com.olehkan.olehkan.data.model.Category
 import com.olehkan.olehkan.data.network.BackendException
 import com.olehkan.olehkan.data.repository.AdminDashboardRepository
+import com.olehkan.olehkan.data.repository.AdminInventoryProduct
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class CategoryInventoryState(
+    val loading: Boolean = false,
+    val loaded: Boolean = false,
+    val products: List<AdminInventoryProduct> = emptyList(),
+    val hasMore: Boolean = false,
+    val nextOffset: Int = 0,
+    val error: String? = null,
+)
 
 data class AdminDashboardState(
     val loading: Boolean = true,
@@ -29,9 +39,11 @@ data class AdminDashboardState(
     val importing: Boolean = false,
     val toolsExpanded: Boolean = false,
     val confirmImport: Boolean = false,
+    val expandedCategoryId: String? = null,
+    val inventory: Map<String, CategoryInventoryState> = emptyMap(),
 ) {
     val visibleCategories: List<Category>
-        get() = categories.asReversed().filter { it.name.contains(query.trim(), ignoreCase = true) }.take(6)
+        get() = categories.asReversed().filter { it.name.contains(query.trim(), ignoreCase = true) }
 }
 
 class AdminDashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -40,6 +52,7 @@ class AdminDashboardViewModel(application: Application) : AndroidViewModel(appli
     private val _uiState = MutableStateFlow(AdminDashboardState())
     val uiState = _uiState.asStateFlow()
     private var loadJob: Job? = null
+    private val productJobs = mutableMapOf<String, Job>()
 
     init {
         viewModelScope.launch {
@@ -51,6 +64,9 @@ class AdminDashboardViewModel(application: Application) : AndroidViewModel(appli
 
     fun refresh() {
         if (loadJob?.isActive == true || _uiState.value.importing) return
+        productJobs.values.forEach { it.cancel() }
+        productJobs.clear()
+        _uiState.update { it.copy(inventory = emptyMap()) }
         loadJob = viewModelScope.launch {
             _uiState.update { it.copy(loading = true, categoriesLoading = true,
                 error = null, categoriesError = null) }
@@ -76,6 +92,43 @@ class AdminDashboardViewModel(application: Application) : AndroidViewModel(appli
             } finally {
                 _uiState.update { it.copy(categoriesLoading = false) }
             }
+            _uiState.value.expandedCategoryId?.let { id ->
+                if (_uiState.value.categories.any { it.id == id }) loadProducts(id)
+            }
+        }
+    }
+
+    fun toggleCategory(categoryId: String) {
+        val expanded = _uiState.value.expandedCategoryId != categoryId
+        _uiState.update { it.copy(expandedCategoryId = if (expanded) categoryId else null) }
+        if (expanded && _uiState.value.inventory[categoryId]?.loaded != true) loadProducts(categoryId)
+    }
+
+    fun loadProducts(categoryId: String, more: Boolean = false) {
+        if (productJobs[categoryId]?.isActive == true) return
+        val previous = _uiState.value.inventory[categoryId] ?: CategoryInventoryState()
+        if (more && (!previous.hasMore || !previous.loaded)) return
+        productJobs[categoryId] = viewModelScope.launch {
+            updateInventory(categoryId) { it.copy(loading = true, error = null) }
+            try {
+                val page = repository.loadProducts(categoryId, if (more) previous.nextOffset else 0)
+                updateInventory(categoryId) {
+                    it.copy(loading = false, loaded = true, error = null,
+                        products = if (more) (previous.products + page.products).distinctBy { p -> p.id } else page.products,
+                        hasMore = page.hasMore,
+                        nextOffset = (if (more) previous.nextOffset else 0) + page.products.size)
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                updateInventory(categoryId) { it.copy(loading = false,
+                    error = failure(e, "Produk belum dapat dimuat. Periksa koneksi dan izin akses produk.")) }
+            }
+        }
+    }
+
+    private fun updateInventory(id: String, update: (CategoryInventoryState) -> CategoryInventoryState) {
+        _uiState.update { state ->
+            state.copy(inventory = state.inventory + (id to update(state.inventory[id] ?: CategoryInventoryState())))
         }
     }
 
