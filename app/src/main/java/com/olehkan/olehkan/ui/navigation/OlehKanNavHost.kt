@@ -1,47 +1,41 @@
 package com.olehkan.olehkan.ui.navigation
 
 import androidx.compose.runtime.Composable
-import com.olehkan.olehkan.data.model.UserProfile
-import com.olehkan.olehkan.data.model.UserRole
-import com.olehkan.olehkan.ui.screens.auth.AuthViewModel
-import com.olehkan.olehkan.ui.screens.auth.LoginScreen
-import com.olehkan.olehkan.ui.screens.auth.RegisterScreen
-import com.olehkan.olehkan.ui.screens.admin.AdminDashboardScreen
-import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.olehkan.olehkan.ui.screens.admin.productform.AdminProductFormViewModelFactory
-import com.olehkan.olehkan.ui.screens.admin.productform.AdminProductListViewModelFactory
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-
 import com.olehkan.olehkan.data.AppContainer
 import com.olehkan.olehkan.data.model.UserProfile
 import com.olehkan.olehkan.data.model.UserRole
 import com.olehkan.olehkan.data.repository.CategoryRepositoryProvider
 import com.olehkan.olehkan.ui.screens.admin.AdminDashboardScreen
 import com.olehkan.olehkan.ui.screens.admin.AdminScreen
+import com.olehkan.olehkan.ui.screens.admin.productform.AdminProductFormViewModelFactory
+import com.olehkan.olehkan.ui.screens.admin.productform.AdminProductListViewModelFactory
 import com.olehkan.olehkan.ui.screens.auth.AuthViewModel
+import com.olehkan.olehkan.ui.screens.auth.LoginScreen
+import com.olehkan.olehkan.ui.screens.auth.RegisterScreen
 import com.olehkan.olehkan.ui.screens.category.CategoryViewModelFactory
 import com.olehkan.olehkan.ui.screens.detail.DetailScreen
 import com.olehkan.olehkan.ui.screens.favorites.FavoritesScreen
 import com.olehkan.olehkan.ui.screens.home.HomeScreen
 import com.olehkan.olehkan.ui.screens.orders.CheckoutScreen
+import com.olehkan.olehkan.ui.screens.orders.OrderDetailScreen
 import com.olehkan.olehkan.ui.screens.orders.OrderViewModel
 import com.olehkan.olehkan.ui.screens.orders.OrderViewModelFactory
 import com.olehkan.olehkan.ui.screens.orders.OrdersScreen
+import com.olehkan.olehkan.ui.screens.payment.PaymentScreen
+import com.olehkan.olehkan.ui.screens.payment.PaymentViewModel
+import com.olehkan.olehkan.ui.screens.payment.PaymentViewModelFactory
 import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
 import com.olehkan.olehkan.ui.screens.profile.ProfileScreen
 import com.olehkan.olehkan.ui.screens.reviews.ReviewsScreen
 import com.olehkan.olehkan.ui.screens.splash.SplashScreen
-import com.olehkan.olehkan.ui.screens.orders.OrderDetailScreen
-import com.olehkan.olehkan.ui.screens.payment.PaymentScreen
-import com.olehkan.olehkan.ui.screens.payment.PaymentViewModel
-import com.olehkan.olehkan.ui.screens.payment.PaymentViewModelFactory
 
 @Composable
 fun OlehKanNavHost(
