@@ -64,7 +64,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.olehkan.olehkan.data.AppContainer
 import coil.compose.AsyncImage
 import com.olehkan.olehkan.data.model.formatRupiah
 import com.olehkan.olehkan.data.model.formattedPrice
@@ -94,7 +96,11 @@ fun DetailScreen(
     onCheckoutClick: (productId: Int, quantity: Int) -> Unit,
     onReviewsClick: (Int) -> Unit,
     onStoreClick: () -> Unit = {},
-    viewModel: DetailViewModel = viewModel(),
+    viewModel: DetailViewModel = viewModel(
+        factory = DetailViewModelFactory(
+            AppContainer.get(LocalContext.current).products,
+        ),
+    ),
 ) {
     LaunchedEffect(productId) {
         viewModel.loadProduct(productId)

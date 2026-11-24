@@ -31,7 +31,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.olehkan.olehkan.data.AppContainer
 import com.olehkan.olehkan.ui.components.ProductCard
 import com.olehkan.olehkan.ui.theme.Dimens
 import com.olehkan.olehkan.ui.theme.Green
@@ -44,7 +46,11 @@ import com.olehkan.olehkan.ui.theme.Paper
 @Composable
 fun FavoritesScreen(
     onProductClick: (Int) -> Unit,
-    viewModel: FavoritesViewModel = viewModel(),
+    viewModel: FavoritesViewModel = viewModel(
+        factory = FavoritesViewModelFactory(
+            AppContainer.get(LocalContext.current).products,
+        ),
+    ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
