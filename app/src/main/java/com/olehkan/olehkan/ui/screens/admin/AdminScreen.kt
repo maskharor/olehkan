@@ -41,7 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.olehkan.olehkan.data.repository.DummyProductRepository
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.olehkan.olehkan.data.AppContainer
 import com.olehkan.olehkan.ui.components.ProductCard
 import com.olehkan.olehkan.ui.theme.Dimens
 import com.olehkan.olehkan.ui.theme.Green
@@ -61,7 +67,14 @@ import com.olehkan.olehkan.ui.theme.White
 fun AdminScreen(
     onBack: () -> Unit,
 ) {
-    val storeProducts = DummyProductRepository.dummyProducts
+    // Katalog toko dari Supabase (bukan dummy lagi).
+    val context = LocalContext.current
+    var storeProducts by remember { mutableStateOf(emptyList<com.olehkan.olehkan.data.model.Product>()) }
+    LaunchedEffect(Unit) {
+        runCatching {
+            storeProducts = AppContainer.get(context).products.getActiveProducts()
+        }
+    }
 
     Box(
         modifier = Modifier

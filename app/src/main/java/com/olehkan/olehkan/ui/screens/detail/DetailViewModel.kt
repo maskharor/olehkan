@@ -3,7 +3,7 @@ package com.olehkan.olehkan.ui.screens.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.olehkan.olehkan.data.model.Product
-import com.olehkan.olehkan.data.repository.DummyProductRepository
+import androidx.lifecycle.ViewModelProvider
 import com.olehkan.olehkan.data.repository.ProductRepository
 import com.olehkan.olehkan.data.repository.WishlistRepository
 import com.olehkan.olehkan.data.repository.WishlistRepositoryProvider
@@ -21,7 +21,7 @@ data class DetailUiState(
 )
 
 class DetailViewModel(
-    private val productRepository: ProductRepository = DummyProductRepository(),
+    private val productRepository: ProductRepository,
     private val wishlistRepository: WishlistRepository = WishlistRepositoryProvider.get(),
 ) : ViewModel() {
 
@@ -70,5 +70,18 @@ class DetailViewModel(
         viewModelScope.launch {
             wishlistRepository.toggleFavorite(currentProductId)
         }
+    }
+}
+
+class DetailViewModelFactory(
+    private val productRepository: ProductRepository,
+    private val wishlistRepository: WishlistRepository = WishlistRepositoryProvider.get(),
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(DetailViewModel::class.java)) {
+            return DetailViewModel(productRepository, wishlistRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

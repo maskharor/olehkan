@@ -5,8 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.olehkan.olehkan.data.repository.DummyProductRepository
+import androidx.lifecycle.ViewModelProvider
 import com.olehkan.olehkan.data.repository.ProductRepository
+import com.olehkan.olehkan.data.repository.SupabaseProductRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val repository: ProductRepository = DummyProductRepository()
+    private val repository: ProductRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -31,7 +32,11 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val products = repository.getProducts()
+                val products = if (repository is SupabaseProductRepository) {
+                    repository.getActiveProducts()
+                } else {
+                    repository.getProducts()
+                }
                 _uiState.update { current ->
                     current.copy(
                         isLoading = false,
@@ -84,5 +89,16 @@ class HomeViewModel(
                 query.isBlank() || product.name.contains(query, ignoreCase = true)
             matchesCategory && matchesQuery
         }
+    }
+}
+class HomeViewModelFactory(
+    private val repository: ProductRepository,
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+            return HomeViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

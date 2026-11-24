@@ -5,14 +5,56 @@ import kotlinx.coroutines.delay
 
 class DummyProductRepository : ProductRepository {
 
+    private val mutableProducts = dummyProducts.toMutableList()
+
     override suspend fun getProducts(): List<Product> {
         delay(300)
-        return dummyProducts
+        return mutableProducts.toList()
     }
 
     override suspend fun getProductById(id: Int): Product? {
         delay(150)
-        return dummyProducts.find { it.id == id }
+        return mutableProducts.find { it.id == id }
+    }
+
+    override suspend fun save(
+        productUuid: String?,
+        name: String,
+        description: String?,
+        price: Int,
+        stock: Int,
+        categoryId: String,
+        imageUrl: String?,
+        isActive: Boolean,
+    ): String {
+        val uuid = productUuid ?: java.util.UUID.randomUUID().toString()
+        val categoryName = when (categoryId) {
+            "711df0df-faa3-4b0c-be6c-5a1f146a1134" -> "Makanan"
+            "832f74e6-743f-40d9-8a6b-2b5197fb4114" -> "Camilan"
+            "da09159f-3f57-4571-beca-ae02a983295a" -> "Manisan"
+            "406d10f5-937c-4f93-a6aa-32368c0a7d58" -> "Asinan"
+            else -> ""
+        }
+        val existing = mutableProducts.find { it.uuid == uuid }
+        val id = existing?.id ?: ((mutableProducts.maxOfOrNull { it.id } ?: 0) + 1)
+        val product = Product(
+            id = id, name = name, place = "", price = price, stock = stock,
+            category = categoryName, categoryId = categoryId,
+            image = imageUrl.orEmpty(), description = description.orEmpty(),
+            isActive = isActive, uuid = uuid,
+        )
+        val index = mutableProducts.indexOfFirst { it.uuid == uuid }
+        if (index >= 0) mutableProducts[index] = product else mutableProducts.add(product)
+        return uuid
+    }
+
+    override suspend fun delete(productUuid: String) {
+        mutableProducts.removeAll { it.uuid == productUuid }
+    }
+
+    override suspend fun setActive(productUuid: String, isActive: Boolean) {
+        val index = mutableProducts.indexOfFirst { it.uuid == productUuid }
+        if (index >= 0) mutableProducts[index] = mutableProducts[index].copy(isActive = isActive)
     }
 
     companion object {
