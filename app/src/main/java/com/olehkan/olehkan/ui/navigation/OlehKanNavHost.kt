@@ -11,22 +11,35 @@ import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.olehkan.olehkan.data.repository.CategoryRepositoryProvider
-import com.olehkan.olehkan.ui.screens.category.CategoryViewModelFactory
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+
+import com.olehkan.olehkan.data.AppContainer
+import com.olehkan.olehkan.data.model.UserProfile
+import com.olehkan.olehkan.data.model.UserRole
+import com.olehkan.olehkan.data.repository.CategoryRepositoryProvider
+import com.olehkan.olehkan.ui.screens.admin.AdminDashboardScreen
 import com.olehkan.olehkan.ui.screens.admin.AdminScreen
-import com.olehkan.olehkan.ui.screens.checkout.CheckoutScreen
+import com.olehkan.olehkan.ui.screens.auth.AuthViewModel
+import com.olehkan.olehkan.ui.screens.category.CategoryViewModelFactory
 import com.olehkan.olehkan.ui.screens.detail.DetailScreen
 import com.olehkan.olehkan.ui.screens.favorites.FavoritesScreen
 import com.olehkan.olehkan.ui.screens.home.HomeScreen
+import com.olehkan.olehkan.ui.screens.orders.CheckoutScreen
+import com.olehkan.olehkan.ui.screens.orders.OrderViewModel
+import com.olehkan.olehkan.ui.screens.orders.OrderViewModelFactory
 import com.olehkan.olehkan.ui.screens.orders.OrdersScreen
+import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
 import com.olehkan.olehkan.ui.screens.profile.ProfileScreen
 import com.olehkan.olehkan.ui.screens.reviews.ReviewsScreen
 import com.olehkan.olehkan.ui.screens.splash.SplashScreen
+import com.olehkan.olehkan.ui.screens.orders.OrderDetailScreen
+import com.olehkan.olehkan.ui.screens.payment.PaymentScreen
+import com.olehkan.olehkan.ui.screens.payment.PaymentViewModel
+import com.olehkan.olehkan.ui.screens.payment.PaymentViewModelFactory
 
 @Composable
 fun OlehKanNavHost(
@@ -35,9 +48,18 @@ fun OlehKanNavHost(
     profile: UserProfile,
 ) {
     val context = LocalContext.current
+    val appContainer = remember(context.applicationContext) {
+        AppContainer.get(context.applicationContext)
+    }
     val categoryFactory = remember(context.applicationContext) {
         CategoryViewModelFactory(CategoryRepositoryProvider.get(context))
     }
+    val orderViewModel: OrderViewModel = viewModel(
+        factory = OrderViewModelFactory(appContainer.orders)
+    )
+    val paymentViewModel: PaymentViewModel = viewModel(
+        factory = PaymentViewModelFactory(appContainer.payments)
+    )
     NavHost(
         navController = navController,
         startDestination = if (profile.role == UserRole.ADMIN) Screen.AdminDashboard.route else Screen.Home.route,
@@ -101,9 +123,72 @@ fun OlehKanNavHost(
 
         composable(Screen.Orders.route) {
             OrdersScreen(
-                onPayClick = { productId ->
-                    navController.navigate(Screen.Checkout.createRoute(productId))
+                viewModel = orderViewModel,
+                onOrderClick = { orderId ->
+                    navController.navigate(
+                        Screen.OrderDetail.createRoute(orderId)
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = Screen.OrderDetail.route,
+            arguments = listOf(
+                navArgument(Screen.OrderDetail.ARG_ORDER_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val orderId = backStackEntry.arguments
+                ?.getString(Screen.OrderDetail.ARG_ORDER_ID)
+                ?: return@composable
+
+            OrderDetailScreen(
+                orderId = orderId,
+                viewModel = orderViewModel,
+                onBack = {
+                    navController.popBackStack()
                 },
+                onPayClick = { id ->
+                    navController.navigate(
+                        Screen.Payment.createRoute(id)
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Payment.route,
+            arguments = listOf(
+                navArgument(Screen.Payment.ARG_ORDER_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val orderId = backStackEntry.arguments
+                ?.getString(Screen.Payment.ARG_ORDER_ID)
+                ?: return@composable
+
+            PaymentScreen(
+                orderId = orderId,
+                orderViewModel = orderViewModel,
+                paymentViewModel = paymentViewModel,
+                onBack = {
+                    navController.popBackStack()
+                },
+                onPaymentSuccess = {
+                    navController.navigate(
+                        Screen.OrderDetail.createRoute(orderId)
+                    ) {
+                        popUpTo(Screen.Payment.route) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
@@ -167,9 +252,13 @@ fun OlehKanNavHost(
                 productId = productId,
                 quantity = quantity,
                 onBack = { navController.popBackStack() },
-                onDone = {
-                    navController.navigate(Screen.Orders.route) {
-                        popUpTo(Screen.Home.route)
+                onDone = { orderId: String ->
+                    navController.navigate(
+                        Screen.Payment.createRoute(orderId)
+                    ) {
+                        popUpTo(Screen.Checkout.route) {
+                            inclusive = true
+                        }
                     }
                 },
             )
