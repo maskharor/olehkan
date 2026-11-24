@@ -46,6 +46,7 @@ fun AdminDashboardScreen(
     viewModel: AdminDashboardViewModel = viewModel(),
     onCategoryClick: (String) -> Unit = { onCategories() },
     onAddCategory: () -> Unit = onCategories,
+    onProducts: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
@@ -53,7 +54,7 @@ fun AdminDashboardScreen(
         profile, state, onCategories, onProfile, onCategoryClick,
         viewModel::refresh, viewModel::onQueryChange, viewModel::toggleTools,
         viewModel::requestImport, viewModel::dismissImport, viewModel::importLocalCategories,
-        onAddCategory, viewModel::toggleCategory, viewModel::loadProducts,
+        onAddCategory, viewModel::toggleCategory, viewModel::loadProducts, onProducts,
     )
 }
 
@@ -73,6 +74,7 @@ internal fun AdminDashboardContent(
     onAddCategory: () -> Unit = onCategories,
     onToggleCategory: (String) -> Unit = onCategoryClick,
     onLoadProducts: (String, Boolean) -> Unit = { _, _ -> },
+    onProducts: () -> Unit = {},
 ) {
     val busy = state.loading || state.categoriesLoading || state.importing
     LazyColumn(
@@ -187,7 +189,6 @@ internal fun AdminDashboardContent(
                 }
             }
         }
-        // Produk merupakan item lazy tersendiri agar daftar panjang tetap ringan.
         state.visibleCategories.forEach { category ->
             val expanded = state.expandedCategoryId == category.id
             val inventory = state.inventory[category.id] ?: CategoryInventoryState()
@@ -248,6 +249,15 @@ internal fun AdminDashboardContent(
             }
         }
         item {
+            Button(onClick = onProducts, modifier = Modifier.fillMaxWidth(),
+                shape = OlehKanShapes.Medium,
+                colors = ButtonDefaults.buttonColors(containerColor = Green, contentColor = White)) {
+                Icon(Icons.Default.Inventory2, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Kelola Produk")
+            }
+        }
+        item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 HorizontalDivider(color = Line)
                 TextButton(onClick = onToggleTools, modifier = Modifier.fillMaxWidth()) {
@@ -278,7 +288,6 @@ internal fun AdminDashboardContent(
     )
 }
 
-/** Kategori masih berupa nama; kategori baru memakai ikon makanan umum sebagai fallback. */
 private fun categoryFoodIcon(name: String): ImageVector {
     val normalized = name.trim().lowercase(Locale.ROOT)
     return when {
