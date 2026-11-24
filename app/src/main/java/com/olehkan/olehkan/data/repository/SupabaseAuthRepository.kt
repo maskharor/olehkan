@@ -132,6 +132,24 @@ class SupabaseAuthRepository(
         }
     }
 
+    suspend fun uploadToStorage(path: String, bytes: ByteArray, contentType: String): String =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                if (tokens == null) {
+                    _session.value = UserSessionState(SessionStatus.SIGNED_OUT)
+                    throw IllegalStateException("Silakan login kembali.")
+                }
+                ensureFreshLocked()
+                try {
+                    return@withLock http.requestBytes("POST", path, tokens!!.access, bytes, contentType)
+                } catch (e: BackendException) {
+                    if (e.statusCode != 401) throw e
+                    refreshLocked()
+                    return@withLock http.requestBytes("POST", path, tokens!!.access, bytes, contentType)
+                }
+            }
+        }
+
     private suspend fun finishSignInLocked() {
         try {
             fetchProfileLocked()

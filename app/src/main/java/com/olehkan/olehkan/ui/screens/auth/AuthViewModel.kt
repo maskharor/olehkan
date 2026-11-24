@@ -69,9 +69,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 val user = it.profile?.id
                 if (user != previousUser) {
                     container.categories.clearCache()
-                    if (previousUser != null) {
-                        val wishlist = com.olehkan.olehkan.data.repository.WishlistRepositoryProvider.get()
-                        wishlist.favoriteIds.value.toList().forEach { id -> wishlist.removeFromFavorites(id) }
+                    container.wishlist.clearCache()
+                    if (it.status == SessionStatus.AUTHENTICATED) {
+                        try {
+                            container.wishlist.loadFavorites()
+                        } catch (_: Exception) {}
                     }
                 }
                 previousUser = user

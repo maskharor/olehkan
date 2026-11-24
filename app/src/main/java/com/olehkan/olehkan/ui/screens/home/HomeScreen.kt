@@ -8,6 +8,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.olehkan.olehkan.data.model.Product
+import androidx.compose.ui.platform.LocalContext
+import com.olehkan.olehkan.data.AppContainer
 import com.olehkan.olehkan.data.repository.WishlistRepository
 import com.olehkan.olehkan.data.repository.WishlistRepositoryProvider
 import kotlinx.coroutines.launch
@@ -18,7 +20,11 @@ fun HomeScreen(
     onAdminClick: () -> Unit,
     categoryViewModel: CategoryViewModel,
     customerName: String = "Pelanggan",
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(
+            AppContainer.get(LocalContext.current).products,
+        ),
+    ),
     wishlistRepository: WishlistRepository = WishlistRepositoryProvider.get(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

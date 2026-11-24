@@ -2,7 +2,7 @@ package com.olehkan.olehkan.ui.screens.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.olehkan.olehkan.data.repository.DummyProductRepository
+import androidx.lifecycle.ViewModelProvider
 import com.olehkan.olehkan.data.repository.ProductRepository
 import com.olehkan.olehkan.data.repository.WishlistRepository
 import com.olehkan.olehkan.data.repository.WishlistRepositoryProvider
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 class FavoritesViewModel(
     private val wishlistRepository: WishlistRepository = WishlistRepositoryProvider.get(),
-    private val productRepository: ProductRepository = DummyProductRepository(),
+    private val productRepository: ProductRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState(isLoading = true))
@@ -76,3 +76,16 @@ class FavoritesViewModel(
     }
 }
 
+
+class FavoritesViewModelFactory(
+    private val productRepository: ProductRepository,
+    private val wishlistRepository: WishlistRepository = WishlistRepositoryProvider.get(),
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(FavoritesViewModel::class.java)) {
+            return FavoritesViewModel(wishlistRepository, productRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

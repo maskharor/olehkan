@@ -113,8 +113,8 @@ fun OlehKanNavHost(
             DetailScreen(
                 productId = productId,
                 onBack = { navController.popBackStack() },
-                onCheckoutClick = { id ->
-                    navController.navigate(Screen.Checkout.createRoute(id))
+                onCheckoutClick = { id, quantity ->
+                    navController.navigate(Screen.Checkout.createRoute(id, quantity))
                 },
                 onReviewsClick = { id ->
                     navController.navigate(Screen.Reviews.createRoute(id))
@@ -127,11 +127,19 @@ fun OlehKanNavHost(
 
         composable(
             route = Screen.Checkout.route,
-            arguments = listOf(navArgument("productId") { type = NavType.IntType }),
+            arguments = listOf(
+                navArgument("productId") { type = NavType.IntType },
+                navArgument("quantity") {
+                    type = NavType.IntType
+                    defaultValue = 1
+                },
+            ),
         ) { backStackEntry ->
             val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+            val quantity = backStackEntry.arguments?.getInt("quantity") ?: 1
             CheckoutScreen(
                 productId = productId,
+                quantity = quantity,
                 onBack = { navController.popBackStack() },
                 onDone = {
                     navController.navigate(Screen.Orders.route) {

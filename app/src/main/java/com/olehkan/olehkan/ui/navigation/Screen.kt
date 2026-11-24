@@ -12,8 +12,10 @@ sealed class Screen(val route: String) {
         fun createRoute(productId: Int): String = "detail/$productId"
     }
 
-    data object Checkout : Screen("checkout/{productId}") {
-        fun createRoute(productId: Int): String = "checkout/$productId"
+    data object Checkout : Screen("checkout/{productId}?quantity={quantity}") {
+        const val ARG_PRODUCT_ID = "productId"
+        const val ARG_QUANTITY = "quantity"
+        fun createRoute(productId: Int, quantity: Int = 1): String = "checkout/$productId?quantity=$quantity"
     }
 
     data object Reviews : Screen("reviews?productId={productId}") {
