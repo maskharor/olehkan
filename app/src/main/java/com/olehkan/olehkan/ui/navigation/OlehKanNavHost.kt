@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import com.olehkan.olehkan.data.model.UserProfile
 import com.olehkan.olehkan.data.model.UserRole
 import com.olehkan.olehkan.ui.screens.auth.AuthViewModel
+import com.olehkan.olehkan.ui.screens.auth.LoginScreen
+import com.olehkan.olehkan.ui.screens.auth.RegisterScreen
 import com.olehkan.olehkan.ui.screens.admin.AdminDashboardScreen
 import com.olehkan.olehkan.ui.screens.profile.EditProfileScreen
 import androidx.compose.runtime.remember
@@ -49,6 +51,30 @@ fun OlehKanNavHost(
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.Login.route) {
+            LoginScreen(
+                viewModel = authViewModel,
+                onBack = { navController.popBackStack() },
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                viewModel = authViewModel,
+                onBack = { navController.popBackStack() },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                },
             )
         }
 
