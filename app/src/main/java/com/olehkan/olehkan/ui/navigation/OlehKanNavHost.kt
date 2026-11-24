@@ -200,6 +200,8 @@ fun OlehKanNavHost(
                 AdminDashboardScreen(
                     profile = profile,
                     onCategories = { navController.navigate(Screen.Categories.route) },
+                    onCategoryClick = { id -> navController.navigate(Screen.CategoryDetail.createRoute(id)) },
+                    onAddCategory = { navController.navigate(Screen.CategoryForm.createRoute()) },
                     onProfile = { navController.navigate(Screen.Profile.route) },
                 )
             }
@@ -212,6 +214,8 @@ fun OlehKanNavHost(
                 AdminDashboardScreen(
                     profile = profile,
                     onCategories = { navController.navigate(Screen.Categories.route) },
+                    onCategoryClick = { id -> navController.navigate(Screen.CategoryDetail.createRoute(id)) },
+                    onAddCategory = { navController.navigate(Screen.CategoryForm.createRoute()) },
                     onProfile = { navController.navigate(Screen.Profile.route) },
                 )
             }
