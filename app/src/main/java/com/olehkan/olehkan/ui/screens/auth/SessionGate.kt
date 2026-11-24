@@ -62,12 +62,6 @@ fun SessionGate(viewModel: AuthViewModel, content: @Composable (UserProfile) -> 
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Tentukan layar aktif berdasarkan status sesi Supabase Auth:
-    // 1. Tampilkan SplashScreen terlebih dahulu (1,8 detik)
-    // 2. Jika sesi Supabase aktif (AUTHENTICATED), arahkan langsung ke Beranda Utama
-    // 3. Jika belum login (SIGNED_OUT):
-    //    - Tampilkan halaman Login/Register jika pengguna memilihnya dari WelcomeScreen
-    //    - Jika tidak, selalu tampilkan WelcomeScreen (halaman awal)
     val currentScreenKey = when {
         showSplash -> "splash"
         session.status == SessionStatus.AUTHENTICATED -> "main"
